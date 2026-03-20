@@ -16,7 +16,7 @@ export default function QuestWork({ quest, messages, events }: QuestWorkProps) {
     <div className="h-full flex">
       <div className="flex-1 flex flex-col min-w-0">
         {(quest.current_step || quest.next_step) && (
-          <div className="px-6 py-3 border-b border-surface-700/50 bg-surface-900/20">
+          <div className="px-6 py-3 border-b border-white/[0.06] bg-surface-900/30">
             <div className="grid grid-cols-2 gap-4">
               {quest.current_step && (
                 <div>
@@ -26,7 +26,7 @@ export default function QuestWork({ quest, messages, events }: QuestWorkProps) {
               )}
               {quest.next_step && (
                 <div>
-                  <span className="text-2xs font-medium text-surface-500 uppercase tracking-wider">Naechster Schritt</span>
+                  <span className="text-2xs font-medium text-surface-500 uppercase tracking-wider">Nächster Schritt</span>
                   <p className="text-xs text-surface-200 mt-0.5">{quest.next_step}</p>
                 </div>
               )}
@@ -40,7 +40,7 @@ export default function QuestWork({ quest, messages, events }: QuestWorkProps) {
           ))}
         </div>
 
-        <div className="px-6 py-3 border-t border-surface-700/50 bg-surface-900/30">
+        <div className="px-6 py-3 border-t border-white/[0.06] bg-surface-900/40">
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -60,8 +60,8 @@ export default function QuestWork({ quest, messages, events }: QuestWorkProps) {
         </div>
       </div>
 
-      <div className="w-64 border-l border-surface-700/50 bg-surface-900/30 overflow-y-auto flex-shrink-0">
-        <div className="px-4 py-3 border-b border-surface-700/50">
+      <div className="w-64 border-l border-white/[0.06] bg-surface-900/40 overflow-y-auto flex-shrink-0">
+        <div className="px-4 py-3 border-b border-white/[0.06]">
           <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wider">Zeitleiste</h3>
         </div>
         <div className="px-4 py-3 space-y-3">
@@ -98,7 +98,7 @@ function MessageBubble({ message }: { message: Message }) {
 
   if (isSystem) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-surface-800/50 rounded text-2xs text-surface-500">
+      <div className="flex items-center gap-2 px-3 py-2 bg-surface-900/50 rounded text-2xs text-surface-500">
         <Cpu size={12} className="flex-shrink-0" />
         <span>{message.content}</span>
         <TimeAgo date={message.created_at} className="ml-auto" />
@@ -109,9 +109,9 @@ function MessageBubble({ message }: { message: Message }) {
   return (
     <div className={`flex gap-2.5 ${isOperator ? 'flex-row-reverse' : ''}`}>
       <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${
-        isOperator ? 'bg-accent-600/20' : 'bg-surface-700'
+        isOperator ? 'bg-gold-500/15' : 'bg-surface-700'
       }`}>
-        <Icon size={14} className={isOperator ? 'text-accent-400' : 'text-surface-400'} />
+        <Icon size={14} className={isOperator ? 'text-gold-400' : 'text-surface-400'} />
       </div>
       <div className={`max-w-[75%] ${isOperator ? 'text-right' : ''}`}>
         <div className={`flex items-center gap-1.5 mb-1 ${isOperator ? 'justify-end' : ''}`}>
@@ -121,8 +121,8 @@ function MessageBubble({ message }: { message: Message }) {
         </div>
         <div className={`px-3 py-2 rounded-lg text-sm leading-relaxed ${
           isOperator
-            ? 'bg-accent-600/15 text-surface-200'
-            : 'bg-surface-800 text-surface-300'
+            ? 'bg-gold-500/10 text-surface-200'
+            : 'bg-surface-900/60 text-surface-300'
         }`}>
           {message.content}
         </div>

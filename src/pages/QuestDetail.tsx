@@ -9,7 +9,6 @@ import {
   Users,
   Archive,
   MoreHorizontal,
-  Send,
   AlertTriangle,
 } from 'lucide-react';
 import { getQuestById, getAgentById, getMessagesForQuest, getEventsForQuest, getArtefactsForQuest } from '../data/mock';
@@ -49,7 +48,7 @@ export default function QuestDetail() {
 
   return (
     <div className="h-screen flex flex-col">
-      <div className="px-6 py-3 border-b border-surface-700/50 bg-surface-900/50">
+      <div className="px-6 py-3 border-b border-white/[0.06] bg-surface-900/50 backdrop-blur-sm">
         <div className="flex items-center gap-3 mb-2">
           <button
             onClick={() => navigate('/quests')}
@@ -76,7 +75,7 @@ export default function QuestDetail() {
             {quest.status === 'in_review' && (
               <>
                 <button className="btn-primary"><CheckCircle2 size={14} /> Freigeben</button>
-                <button className="btn-secondary"><RotateCcw size={14} /> Aenderungen</button>
+                <button className="btn-secondary"><RotateCcw size={14} /> Änderungen</button>
               </>
             )}
             <button className="btn-ghost"><Users size={14} /> Zuweisen</button>
@@ -106,7 +105,7 @@ export default function QuestDetail() {
         )}
       </div>
 
-      <div className="border-b border-surface-700/50 bg-surface-900/30 px-6">
+      <div className="border-b border-white/[0.06] bg-surface-900/40 px-6">
         <div className="flex gap-0">
           {tabs.map(tab => (
             <button
@@ -114,7 +113,7 @@ export default function QuestDetail() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-accent-500 text-surface-100'
+                  ? 'border-gold-500 text-surface-100'
                   : 'border-transparent text-surface-500 hover:text-surface-300'
               }`}
             >

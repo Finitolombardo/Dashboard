@@ -5,10 +5,9 @@ import {
   ArrowRight,
   RotateCcw,
   Crosshair,
-  Users,
   MessageSquare,
 } from 'lucide-react';
-import { mockSignals, getQuestById, getAgentById } from '../data/mock';
+import { mockSignals, getQuestById } from '../data/mock';
 import PageHeader from '../components/shared/PageHeader';
 import SignalTypeTag from '../components/shared/SignalTypeTag';
 import PriorityTag from '../components/shared/PriorityTag';
@@ -41,7 +40,7 @@ export default function Inbox() {
         )}
 
         {needsDecision.length > 0 && (
-          <InboxSection title="Entscheidung noetig" count={needsDecision.length} variant="warning">
+          <InboxSection title="Entscheidung nötig" count={needsDecision.length} variant="warning">
             {needsDecision.map(signal => (
               <InboxItem key={signal.id} signal={signal} navigate={navigate} />
             ))}
@@ -113,7 +112,7 @@ function InboxItem({ signal, navigate }: { signal: (typeof mockSignals)[0]; navi
             {quest && (
               <button
                 onClick={() => navigate(`/quests/${quest.id}`)}
-                className="text-accent-400 hover:text-accent-300 transition-colors flex items-center gap-0.5"
+                className="text-gold-400 hover:text-gold-300 transition-colors flex items-center gap-0.5"
               >
                 {quest.title}
               </button>
@@ -161,7 +160,7 @@ function InboxItem({ signal, navigate }: { signal: (typeof mockSignals)[0]; navi
           )}
           {signal.type === 'stuck_session' && (
             <button className="btn-primary text-2xs py-1 px-2">
-              <ArrowRight size={12} /> Sitzung oeffnen
+              <ArrowRight size={12} /> Sitzung öffnen
             </button>
           )}
           {signal.type === 'system_warning' && (

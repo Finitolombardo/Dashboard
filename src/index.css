@@ -12,7 +12,8 @@
 
   body {
     @apply bg-surface-950 font-sans;
-    color: #c8cacf;
+    color: #ccc8c4;
+    line-height: 1.5;
   }
 
   ::selection {
@@ -30,17 +31,17 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-surface-700/60 rounded-full;
+    @apply bg-surface-700/50 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-surface-600/60;
+    @apply bg-surface-600/50;
   }
 }
 
 @layer components {
   .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800/70 transition-all duration-150;
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-surface-400 hover:text-surface-100 hover:bg-white/[0.04] transition-all duration-150;
   }
 
   .sidebar-link.active {
@@ -48,31 +49,31 @@
   }
 
   .card {
-    @apply bg-surface-850/80 border border-surface-700/40 rounded-lg;
+    @apply bg-surface-900/60 border border-white/[0.06] rounded-xl;
   }
 
   .card-hover {
-    @apply card hover:border-surface-600/40 hover:bg-surface-800/80 transition-all duration-150 cursor-pointer;
+    @apply card hover:border-white/[0.10] hover:bg-surface-850/80 transition-all duration-200 cursor-pointer;
   }
 
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-3.5 py-1.5 bg-gold-500/90 hover:bg-gold-400/90 text-surface-950 text-xs font-semibold rounded transition-all duration-150;
+    @apply inline-flex items-center gap-2 px-3.5 py-1.5 bg-gold-500/90 hover:bg-gold-400 text-surface-950 text-xs font-semibold rounded-lg transition-all duration-150 shadow-[0_1px_2px_rgba(0,0,0,0.2)];
   }
 
   .btn-secondary {
-    @apply inline-flex items-center gap-2 px-3.5 py-1.5 bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium rounded border border-surface-600/40 transition-all duration-150;
+    @apply inline-flex items-center gap-2 px-3.5 py-1.5 bg-surface-800/80 hover:bg-surface-700/80 text-surface-200 text-xs font-medium rounded-lg border border-white/[0.06] transition-all duration-150;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center gap-2 px-3 py-1.5 text-surface-400 hover:text-surface-200 hover:bg-surface-800/70 text-xs font-medium rounded transition-all duration-150;
+    @apply inline-flex items-center gap-2 px-3 py-1.5 text-surface-400 hover:text-surface-200 hover:bg-white/[0.04] text-xs font-medium rounded-lg transition-all duration-150;
   }
 
   .btn-danger {
-    @apply inline-flex items-center gap-2 px-3.5 py-1.5 bg-danger-500/10 hover:bg-danger-500/20 text-danger-400 text-xs font-medium rounded border border-danger-500/20 transition-all duration-150;
+    @apply inline-flex items-center gap-2 px-3.5 py-1.5 bg-danger-500/10 hover:bg-danger-500/20 text-danger-400 text-xs font-medium rounded-lg border border-danger-500/20 transition-all duration-150;
   }
 
   .input {
-    @apply w-full px-3 py-2 bg-surface-900 border border-surface-700/40 rounded text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-gold-500/40 focus:ring-1 focus:ring-gold-500/20 transition-colors duration-150;
+    @apply w-full px-3 py-2 bg-surface-900/80 border border-white/[0.06] rounded-lg text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-gold-500/30 focus:ring-1 focus:ring-gold-500/15 transition-colors duration-150;
   }
 
   .label {

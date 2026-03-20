@@ -6,7 +6,6 @@ import {
   RotateCcw,
   ExternalLink,
   Crosshair,
-  Bot,
   Activity,
   Server,
   AlertTriangle,
@@ -20,7 +19,7 @@ import TimeAgo from '../components/shared/TimeAgo';
 
 const sectionTabs = [
   { id: 'workflows', label: 'Workflows', icon: Workflow },
-  { id: 'executions', label: 'Ausfuehrungen', icon: Play },
+  { id: 'executions', label: 'Ausführungen', icon: Play },
   { id: 'sessions', label: 'Sitzungen', icon: Activity },
   { id: 'services', label: 'Dienste', icon: Server },
 ];
@@ -33,10 +32,10 @@ export default function Systems() {
     <div className="h-screen flex flex-col">
       <PageHeader
         title="Systeme"
-        subtitle="Workflows, Ausfuehrungen, Sitzungen & Dienste"
+        subtitle="Workflows, Ausführungen, Sitzungen & Dienste"
       />
 
-      <div className="border-b border-surface-700/50 bg-surface-900/30 px-6">
+      <div className="border-b border-white/[0.06] bg-surface-900/40 px-6">
         <div className="flex gap-0">
           {sectionTabs.map(tab => (
             <button
@@ -44,7 +43,7 @@ export default function Systems() {
               onClick={() => setActiveSection(tab.id)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 activeSection === tab.id
-                  ? 'border-accent-500 text-surface-100'
+                  ? 'border-gold-500 text-surface-100'
                   : 'border-transparent text-surface-500 hover:text-surface-300'
               }`}
             >
@@ -56,8 +55,8 @@ export default function Systems() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4">
-        {activeSection === 'workflows' && <WorkflowsSection navigate={navigate} />}
-        {activeSection === 'executions' && <ExecutionsSection navigate={navigate} />}
+        {activeSection === 'workflows' && <WorkflowsSection />}
+        {activeSection === 'executions' && <ExecutionsSection />}
         {activeSection === 'sessions' && <SessionsSection navigate={navigate} />}
         {activeSection === 'services' && <ServicesSection />}
       </div>
@@ -65,7 +64,7 @@ export default function Systems() {
   );
 }
 
-function WorkflowsSection({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+function WorkflowsSection() {
   return (
     <div className="space-y-2">
       {mockWorkflows.map(workflow => {
@@ -73,7 +72,7 @@ function WorkflowsSection({ navigate }: { navigate: ReturnType<typeof useNavigat
         return (
           <div key={workflow.id} className="card p-4">
             <div className="flex items-center gap-4">
-              <div className="w-9 h-9 rounded-lg bg-surface-800 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-surface-900/70 border border-white/[0.06] flex items-center justify-center flex-shrink-0">
                 <Workflow size={16} className="text-surface-400" />
               </div>
               <div className="flex-1 min-w-0">
@@ -106,7 +105,7 @@ function WorkflowsSection({ navigate }: { navigate: ReturnType<typeof useNavigat
   );
 }
 
-function ExecutionsSection({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+function ExecutionsSection() {
   const failedExecutions = mockExecutions.filter(e => e.status === 'failed');
   const successExecutions = mockExecutions.filter(e => e.status === 'success');
 
@@ -204,7 +203,7 @@ function SessionsSection({ navigate }: { navigate: ReturnType<typeof useNavigate
                       className="btn-primary text-2xs py-1 px-2"
                       onClick={() => navigate(`/sessions/${session.id}`)}
                     >
-                      <ExternalLink size={10} /> Oeffnen
+                      <ExternalLink size={10} /> Öffnen
                     </button>
                   </div>
                 </div>
@@ -277,7 +276,7 @@ function ServicesSection() {
               </span>
             </div>
             <div className="flex items-center justify-between text-2xs">
-              <span className="text-surface-500">Letzte Pruefung</span>
+              <span className="text-surface-500">Letzte Prüfung</span>
               <TimeAgo date={service.last_check} />
             </div>
           </div>

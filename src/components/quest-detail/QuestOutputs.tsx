@@ -49,7 +49,7 @@ export default function QuestOutputs({ artefacts }: QuestOutputsProps) {
           return (
             <div key={artefact.id} className="card-hover p-4">
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-md bg-surface-800 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-md bg-surface-900/60 border border-white/[0.06] flex items-center justify-center flex-shrink-0">
                   <Icon size={16} className="text-surface-400" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -60,7 +60,7 @@ export default function QuestOutputs({ artefacts }: QuestOutputsProps) {
                   </div>
                   <TimeAgo date={artefact.created_at} className="mt-1 block" />
                 </div>
-                <button className="text-surface-500 hover:text-accent-400 transition-colors">
+                <button className="text-surface-500 hover:text-gold-400 transition-colors">
                   <ExternalLink size={14} />
                 </button>
               </div>

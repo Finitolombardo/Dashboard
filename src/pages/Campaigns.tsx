@@ -19,7 +19,7 @@ export default function Campaigns() {
         subtitle={`${mockCampaigns.length} Kampagnen | ${totalSent} E-Mails gesendet`}
       />
 
-      <div className="px-6 py-3 border-b border-surface-700/50 bg-surface-900/30">
+      <div className="px-6 py-3 border-b border-white/[0.06] bg-surface-900/40">
         <div className="flex items-center gap-6">
           <MetricBadge label="Gesendet" value={totalSent.toLocaleString('de-DE')} />
           <MetricBadge label="Beantwortet" value={totalReplied.toString()} />
@@ -43,7 +43,7 @@ export default function Campaigns() {
             return (
               <div key={campaign.id} className={`card p-4 ${hasBounceIssue ? 'border-warning-500/30' : ''}`}>
                 <div className="flex items-start gap-4">
-                  <div className="w-9 h-9 rounded-lg bg-surface-800 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-surface-900/70 border border-white/[0.06] flex items-center justify-center flex-shrink-0">
                     <Megaphone size={16} className="text-surface-400" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -55,7 +55,7 @@ export default function Campaigns() {
 
                     <div className="grid grid-cols-6 gap-4 mt-3">
                       <CampaignMetric label="Gesendet" value={campaign.sent.toLocaleString('de-DE')} />
-                      <CampaignMetric label="Geoeffnet" value={campaign.opened.toLocaleString('de-DE')} sub={`${openRate}%`} />
+                      <CampaignMetric label="Geöffnet" value={campaign.opened.toLocaleString('de-DE')} sub={`${openRate}%`} />
                       <CampaignMetric label="Beantwortet" value={campaign.replied.toString()} sub={`${replyRate}%`} warn={hasLowReplyRate} />
                       <CampaignMetric label="Positiv" value={campaign.positive_replies.toString()} sub={`${positiveRate}%`} />
                       <CampaignMetric
@@ -73,7 +73,7 @@ export default function Campaigns() {
                         {hasBounceIssue && (
                           <div className="flex items-center gap-1 text-2xs text-warning-400">
                             <AlertTriangle size={10} />
-                            Bounce-Rate ueber Schwellenwert
+                            Bounce-Rate über Schwellenwert
                           </div>
                         )}
                         {hasLowReplyRate && (

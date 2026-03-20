@@ -1,4 +1,4 @@
-import { FileText, Link as LinkIcon, BookOpen, Brain, Workflow, MonitorPlay, Megaphone, ExternalLink } from 'lucide-react';
+import { FileText, Link as LinkIcon, BookOpen, Brain, Workflow, Megaphone, ExternalLink, Shield } from 'lucide-react';
 import type { Quest } from '../../types';
 import { getWorkflowById, getCampaignById } from '../../data/mock';
 
@@ -18,7 +18,7 @@ export default function QuestContext({ quest }: QuestContextProps) {
         </ContextSection>
       )}
 
-      <ContextSection title="Verknuepfte Notion-Dokumente" icon={LinkIcon}>
+      <ContextSection title="Verknüpfte Notion-Dokumente" icon={LinkIcon}>
         <div className="space-y-2">
           <DocItem title="Outreach Playbook DACH" type="Playbook" />
           <DocItem title="Kampagnen-Strategie Q1 2025" type="Strategie" />
@@ -27,14 +27,14 @@ export default function QuestContext({ quest }: QuestContextProps) {
       </ContextSection>
 
       {workflow && (
-        <ContextSection title="Verknuepfter Workflow" icon={Workflow}>
+        <ContextSection title="Verknüpfter Workflow" icon={Workflow}>
           <div className="card p-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-surface-200">{workflow.name}</p>
                 <p className="text-2xs text-surface-500 mt-0.5">Status: {workflow.status} | Gesundheit: {workflow.execution_health}</p>
               </div>
-              <button className="text-surface-500 hover:text-accent-400 transition-colors">
+              <button className="text-surface-500 hover:text-gold-400 transition-colors">
                 <ExternalLink size={14} />
               </button>
             </div>
@@ -43,20 +43,37 @@ export default function QuestContext({ quest }: QuestContextProps) {
       )}
 
       {campaign && (
-        <ContextSection title="Verknuepfte Kampagne" icon={Megaphone}>
+        <ContextSection title="Verknüpfte Kampagne" icon={Megaphone}>
           <div className="card p-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-surface-200">{campaign.name}</p>
                 <p className="text-2xs text-surface-500 mt-0.5">{campaign.platform} | {campaign.sent} gesendet</p>
               </div>
-              <button className="text-surface-500 hover:text-accent-400 transition-colors">
+              <button className="text-surface-500 hover:text-gold-400 transition-colors">
                 <ExternalLink size={14} />
               </button>
             </div>
           </div>
         </ContextSection>
       )}
+
+      <ContextSection title="Entscheidungsgrundlage" icon={Shield}>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs bg-surface-900/50 px-3 py-2 rounded">
+            <span className="text-surface-500">Regelwerk</span>
+            <span className="font-mono text-surface-400">Canonical Core v1</span>
+          </div>
+          <div className="flex items-center justify-between text-xs bg-surface-900/50 px-3 py-2 rounded">
+            <span className="text-surface-500">Playbook</span>
+            <span className="font-mono text-surface-400">Outreach Ops</span>
+          </div>
+          <div className="flex items-center justify-between text-xs bg-surface-900/50 px-3 py-2 rounded">
+            <span className="text-surface-500">Adapter</span>
+            <span className="font-mono text-surface-400">Mission Control</span>
+          </div>
+        </div>
+      </ContextSection>
 
       <ContextSection title="Referenzen" icon={BookOpen}>
         <div className="space-y-2">
@@ -67,11 +84,11 @@ export default function QuestContext({ quest }: QuestContextProps) {
 
       <ContextSection title="Memory" icon={Brain}>
         <div className="space-y-2">
-          <div className="text-xs text-surface-400 bg-surface-800/50 px-3 py-2 rounded">
-            <p>Fruehere Kampagnen im DACH-Markt zeigten bessere Performance mit personalisiertem Einstieg.</p>
+          <div className="text-xs text-surface-400 bg-surface-900/50 px-3 py-2 rounded">
+            <p>Frühere Kampagnen im DACH-Markt zeigten bessere Performance mit personalisiertem Einstieg.</p>
           </div>
-          <div className="text-xs text-surface-400 bg-surface-800/50 px-3 py-2 rounded">
-            <p>Betreffzeilen mit Zahlen haben 12% hoehere Open-Rate.</p>
+          <div className="text-xs text-surface-400 bg-surface-900/50 px-3 py-2 rounded">
+            <p>Betreffzeilen mit Zahlen haben 12% höhere Open-Rate.</p>
           </div>
         </div>
       </ContextSection>
@@ -99,7 +116,7 @@ function ContextSection({ title, icon: Icon, children }: { title: string; icon: 
 
 function DocItem({ title, type }: { title: string; type: string }) {
   return (
-    <button className="flex items-center gap-2 w-full text-left px-3 py-2 bg-surface-800/50 hover:bg-surface-800 rounded transition-colors">
+    <button className="flex items-center gap-2 w-full text-left px-3 py-2 bg-surface-900/50 hover:bg-surface-900/60 rounded transition-colors">
       <LinkIcon size={12} className="text-surface-500 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-xs text-surface-300 truncate">{title}</p>

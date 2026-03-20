@@ -59,8 +59,8 @@ export default function ContextRail({ signal }: ContextRailProps) {
       <div className="border-b border-white/5 px-4 py-4">
         <p className="section-label mb-1">Kontext</p>
         <h3 className="text-sm font-semibold text-surface-100">Operativer Randkontext</h3>
-        <p className="mt-1 text-2xs leading-relaxed text-surface-500">
-          Zuständigkeit, Bezug, Status und direkte nächste Schritte in einer ruhigen Seitenleiste.
+        <p className="mt-1 text-2xs leading-relaxed text-surface-400/70">
+          Zuständigkeit, Bezug, Status und nächste Schritte.
         </p>
       </div>
 
@@ -134,6 +134,14 @@ export default function ContextRail({ signal }: ContextRailProps) {
           </RailSection>
         )}
 
+        <RailSection title="Entscheidungsgrundlage" subtitle="Regelwerk und Quellsystem">
+          <div className="space-y-1.5">
+            <TraceRow label="Regelwerk" value="Canonical Core v1" />
+            <TraceRow label="Playbook" value="Outreach Ops" />
+            <TraceRow label="Quellsystem" value={signal.source || 'System'} />
+          </div>
+        </RailSection>
+
         <RailSection title="Kontext" subtitle="Verweise und Meta-Informationen zum Signal">
           <div className="space-y-1.5">
             <DocLink label="Outreach Playbook" />
@@ -180,7 +188,7 @@ function RailSection({
     <section className="rounded-2xl border border-white/5 bg-surface-900/55 p-3 shadow-[0_14px_26px_rgba(0,0,0,0.14)]">
       <div className="mb-3">
         <p className="section-label mb-1">{title}</p>
-        {subtitle && <p className="text-2xs leading-relaxed text-surface-500">{subtitle}</p>}
+        {subtitle && <p className="text-2xs leading-relaxed text-surface-400/70">{subtitle}</p>}
       </div>
       {children}
     </section>
@@ -246,6 +254,15 @@ function RailDetail({
         {label}
       </span>
       <p className={`text-xs leading-relaxed ${danger ? 'text-danger-300' : 'text-surface-300'}`}>{value}</p>
+    </div>
+  );
+}
+
+function TraceRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-surface-900/50 px-2.5 py-1.5">
+      <span className="text-2xs text-surface-500">{label}</span>
+      <span className="text-2xs font-mono text-surface-300 truncate">{value}</span>
     </div>
   );
 }

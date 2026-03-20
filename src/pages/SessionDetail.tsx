@@ -24,7 +24,7 @@ export default function SessionDetail() {
 
   return (
     <div className="h-screen flex flex-col">
-      <div className="px-6 py-3 border-b border-surface-700/50 bg-surface-900/50">
+      <div className="px-6 py-3 border-b border-white/[0.06] bg-surface-900/50 backdrop-blur-sm">
         <div className="flex items-center gap-3 mb-2">
           <button
             onClick={() => navigate('/systems')}
@@ -67,7 +67,7 @@ export default function SessionDetail() {
               <div>
                 <h3 className="text-sm font-medium text-danger-300">Sitzung meldet Fehler</h3>
                 <p className="text-xs text-danger-400/80 mt-1">
-                  Die Sitzung antwortet nicht mehr. Moegliche Ursache: Modell-Timeout oder Verbindungsabbruch.
+                  Die Sitzung antwortet nicht mehr. Mögliche Ursache: Modell-Timeout oder Verbindungsabbruch.
                 </p>
                 <div className="flex items-center gap-2 mt-3">
                   <button className="btn-primary text-xs">Sitzung neu starten</button>
@@ -97,7 +97,7 @@ export default function SessionDetail() {
                 <LogEntry
                   time={session.started_at}
                   type="system"
-                  content={`Verknuepft mit Quest: ${quest.title}`}
+                  content={`Verknüpft mit Quest: ${quest.title}`}
                 />
               )}
               {session.last_message && (
@@ -118,11 +118,11 @@ export default function SessionDetail() {
           </div>
         </div>
 
-        <div className="w-72 border-l border-surface-700/50 bg-surface-900/30 overflow-y-auto flex-shrink-0 px-4 py-4">
+        <div className="w-72 border-l border-white/[0.06] bg-surface-900/40 overflow-y-auto flex-shrink-0 px-4 py-4">
           <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3">Kontext</h3>
 
           {agent && (
-            <div className="mb-4 pb-4 border-b border-surface-700/30">
+            <div className="mb-4 pb-4 border-b border-white/[0.04]">
               <p className="text-2xs text-surface-500 mb-1">Agent</p>
               <AgentChip agent={agent} size="md" />
               <p className="text-2xs text-surface-500 mt-1">{agent.capabilities}</p>
@@ -130,11 +130,11 @@ export default function SessionDetail() {
           )}
 
           {quest && (
-            <div className="mb-4 pb-4 border-b border-surface-700/30">
-              <p className="text-2xs text-surface-500 mb-1">Verknuepfte Quest</p>
+            <div className="mb-4 pb-4 border-b border-white/[0.04]">
+              <p className="text-2xs text-surface-500 mb-1">Verknüpfte Quest</p>
               <button
                 onClick={() => navigate(`/quests/${quest.id}`)}
-                className="text-xs text-surface-200 hover:text-accent-300 transition-colors flex items-center gap-1"
+                className="text-xs text-surface-200 hover:text-gold-300 transition-colors flex items-center gap-1"
               >
                 {quest.title} <ExternalLink size={10} />
               </button>
@@ -142,11 +142,25 @@ export default function SessionDetail() {
             </div>
           )}
 
-          <div className="mb-4 pb-4 border-b border-surface-700/30">
-            <p className="text-2xs text-surface-500 mb-1">Verknuepfte Dokumente</p>
+          <div className="mb-4 pb-4 border-b border-white/[0.04]">
+            <p className="text-2xs text-surface-500 mb-1">Verknüpfte Dokumente</p>
             <div className="space-y-1">
-              <button className="text-2xs text-surface-400 hover:text-accent-300 transition-colors block">Agent Onboarding Guide</button>
-              <button className="text-2xs text-surface-400 hover:text-accent-300 transition-colors block">Workflow-Handbuch</button>
+              <button className="text-2xs text-surface-400 hover:text-gold-300 transition-colors block">Agent Onboarding Guide</button>
+              <button className="text-2xs text-surface-400 hover:text-gold-300 transition-colors block">Workflow-Handbuch</button>
+            </div>
+          </div>
+
+          <div className="mb-4 pb-4 border-b border-white/[0.04]">
+            <p className="text-2xs text-surface-500 mb-1.5">Entscheidungsgrundlage</p>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-2xs">
+                <span className="text-surface-500">Regelwerk</span>
+                <span className="font-mono text-surface-400">Canonical Core v1</span>
+              </div>
+              <div className="flex items-center justify-between text-2xs">
+                <span className="text-surface-500">Quellsystem</span>
+                <span className="font-mono text-surface-400">OpenCode</span>
+              </div>
             </div>
           </div>
 
@@ -188,7 +202,7 @@ function LogEntry({ time, type, content }: { time: string; type: 'system' | 'age
   };
   const dotColors = {
     system: 'bg-surface-600',
-    agent: 'bg-accent-500',
+    agent: 'bg-gold-500',
     error: 'bg-danger-500',
   };
 

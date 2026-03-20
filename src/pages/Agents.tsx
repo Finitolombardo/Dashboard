@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Bot, ExternalLink, Crosshair, Activity, Cpu } from 'lucide-react';
+import { Bot, ExternalLink, Crosshair, Activity } from 'lucide-react';
 import { mockAgents, getSessionsForAgent, getQuestsForAgent } from '../data/mock';
 import PageHeader from '../components/shared/PageHeader';
 import StatusBadge from '../components/shared/StatusBadge';
@@ -12,7 +12,7 @@ export default function Agents() {
   const offlineAgents = mockAgents.filter(a => a.status === 'offline');
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-surface-950">
       <PageHeader
         title="Agenten"
         subtitle={`${mockAgents.length} Agenten | ${activeAgents.length} aktiv`}
@@ -30,7 +30,7 @@ export default function Agents() {
               <div key={agent.id} className="card p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-lg bg-surface-800 border border-surface-700/50 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-lg bg-surface-900/70 border border-white/[0.06] flex items-center justify-center">
                       <Bot size={18} className="text-surface-400" />
                     </div>
                     <div>
@@ -51,13 +51,13 @@ export default function Agents() {
                     <span className="text-surface-300">{agent.workload} Quest{agent.workload !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="flex items-center justify-between text-2xs">
-                    <span className="text-surface-500">Faehigkeiten</span>
+                    <span className="text-surface-500">Fähigkeiten</span>
                     <span className="text-surface-400 truncate ml-4 text-right">{agent.capabilities.split(',')[0]}</span>
                   </div>
                 </div>
 
                 {activeSessions.length > 0 && (
-                  <div className="pt-2 border-t border-surface-700/30 mb-3">
+                  <div className="pt-2 border-t border-white/[0.04] mb-3">
                     <p className="text-2xs font-medium text-surface-500 uppercase tracking-wider mb-1.5">Aktive Sitzungen</p>
                     {activeSessions.slice(0, 2).map(session => (
                       <button
@@ -77,7 +77,7 @@ export default function Agents() {
                 )}
 
                 {activeQuests.length > 0 && (
-                  <div className="pt-2 border-t border-surface-700/30 mb-3">
+                  <div className="pt-2 border-t border-white/[0.04] mb-3">
                     <p className="text-2xs font-medium text-surface-500 uppercase tracking-wider mb-1.5">Aktive Quests</p>
                     {activeQuests.slice(0, 2).map(quest => (
                       <button
@@ -85,7 +85,7 @@ export default function Agents() {
                         onClick={() => navigate(`/quests/${quest.id}`)}
                         className="flex items-center gap-2 w-full text-left px-2 py-1.5 hover:bg-surface-800 rounded transition-colors mb-1"
                       >
-                        <Crosshair size={10} className="text-accent-400 flex-shrink-0" />
+                        <Crosshair size={10} className="text-gold-400 flex-shrink-0" />
                         <p className="text-2xs text-surface-300 truncate flex-1">{quest.title}</p>
                         <StatusBadge status={quest.status} />
                       </button>
@@ -93,13 +93,13 @@ export default function Agents() {
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 pt-2 border-t border-surface-700/30">
+                <div className="flex items-center gap-2 pt-2 border-t border-white/[0.04]">
                   <button
                     className="btn-ghost text-2xs flex-1"
                     onClick={() => activeSessions[0] && navigate(`/sessions/${activeSessions[0].id}`)}
                   >
                     <ExternalLink size={10} />
-                    Sitzung oeffnen
+                    Sitzung öffnen
                   </button>
                   <button className="btn-ghost text-2xs flex-1">
                     <Crosshair size={10} />

@@ -22,8 +22,8 @@ export default function NewQuestModal({ onClose }: NewQuestModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface-850 border border-surface-700/50 rounded-lg w-full max-w-lg mx-4 animate-fade-in">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700/50">
+      <div className="relative bg-surface-900 border border-white/[0.08] rounded-2xl w-full max-w-lg mx-4 shadow-[0_24px_48px_rgba(0,0,0,0.4)]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <h2 className="text-base font-semibold text-surface-50">Neue Quest erstellen</h2>
           <button onClick={onClose} className="text-surface-500 hover:text-surface-300 transition-colors">
             <X size={18} />
@@ -66,7 +66,7 @@ export default function NewQuestModal({ onClose }: NewQuestModalProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Prioritaet</label>
+              <label className="label">Priorität</label>
               <select
                 className="input"
                 value={priority}

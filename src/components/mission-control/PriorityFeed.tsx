@@ -195,7 +195,7 @@ function FeedItem({
         {signal.title}
       </p>
 
-      <p className="mb-3 line-clamp-2 text-2xs leading-relaxed text-surface-500">
+      <p className="mb-3 line-clamp-2 text-2xs leading-relaxed text-surface-400/80">
         {signal.summary}
       </p>
 

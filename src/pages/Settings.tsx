@@ -1,4 +1,4 @@
-import { Settings as SettingsIcon, Database, Key, Bell, Palette, Plug } from 'lucide-react';
+import { Database, Key, Bell, Palette, Plug } from 'lucide-react';
 import PageHeader from '../components/shared/PageHeader';
 
 export default function Settings() {
@@ -6,7 +6,7 @@ export default function Settings() {
     <div className="h-screen flex flex-col">
       <PageHeader
         title="Einstellungen"
-        subtitle="Konfiguration und Praeferenzen"
+        subtitle="Konfiguration und Präferenzen"
       />
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
@@ -17,7 +17,7 @@ export default function Settings() {
         />
         <SettingsCard
           icon={Key}
-          title="API-Schluessel"
+          title="API-Schlüssel"
           description="Verwaltung externer Dienst-Zugangsdaten"
         />
         <SettingsCard
@@ -43,7 +43,7 @@ export default function Settings() {
 function SettingsCard({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) {
   return (
     <div className="card-hover p-4 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-lg bg-surface-800 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
+      <div className="w-10 h-10 rounded-lg bg-surface-900/70 border border-white/[0.06] flex items-center justify-center flex-shrink-0">
         <Icon size={18} className="text-surface-400" />
       </div>
       <div>

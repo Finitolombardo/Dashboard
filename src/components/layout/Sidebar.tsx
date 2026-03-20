@@ -26,22 +26,22 @@ const secondaryNav = [
 
 export default function Sidebar() {
   return (
-    <aside className="w-56 h-screen bg-surface-900 border-r border-surface-700/50 flex flex-col fixed left-0 top-0 z-40">
-      <div className="px-4 py-4 border-b border-surface-700/50">
+    <aside className="w-56 h-screen bg-surface-950 border-r border-white/[0.06] flex flex-col fixed left-0 top-0 z-40">
+      <div className="px-4 py-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-gold-500 flex items-center justify-center">
-            <LayoutDashboard size={14} className="text-white" />
+          <div className="w-7 h-7 rounded-lg bg-gold-500 flex items-center justify-center shadow-[0_0_12px_rgba(201,144,30,0.15)]">
+            <LayoutDashboard size={14} className="text-surface-950" />
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-surface-50 leading-tight">Mission Control</h1>
+            <h1 className="text-sm font-semibold text-surface-50 leading-tight tracking-tight">Mission Control</h1>
             <p className="text-2xs text-surface-500">Operator-Cockpit</p>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-2.5 py-3 space-y-0.5 overflow-y-auto">
         <div className="mb-3">
-          <p className="px-3 mb-1.5 text-2xs font-medium text-surface-500 uppercase tracking-wider">Navigation</p>
+          <p className="px-3 mb-2 text-2xs font-semibold text-surface-500 uppercase tracking-widest">Navigation</p>
           {mainNav.map(item => (
             <NavLink
               key={item.to}
@@ -57,8 +57,8 @@ export default function Sidebar() {
           ))}
         </div>
 
-        <div className="pt-3 border-t border-surface-700/30">
-          <p className="px-3 mb-1.5 text-2xs font-medium text-surface-500 uppercase tracking-wider">Sonstiges</p>
+        <div className="pt-3 border-t border-white/[0.04]">
+          <p className="px-3 mb-2 text-2xs font-semibold text-surface-500 uppercase tracking-widest">Sonstiges</p>
           {secondaryNav.map(item => (
             <NavLink
               key={item.to}
@@ -74,16 +74,16 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      <div className="px-3 py-3 border-t border-surface-700/50">
+      <div className="px-3 py-3 border-t border-white/[0.06]">
         <div className="flex items-center gap-2.5 px-2">
-          <div className="w-6 h-6 rounded-full bg-surface-700 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-full bg-surface-800 border border-white/[0.06] flex items-center justify-center">
             <span className="text-2xs font-medium text-surface-300">OP</span>
           </div>
           <div className="min-w-0">
             <p className="text-xs font-medium text-surface-300 truncate">Operator</p>
             <p className="text-2xs text-surface-500">Online</p>
           </div>
-          <div className="w-1.5 h-1.5 rounded-full bg-success-500 ml-auto flex-shrink-0" />
+          <div className="w-1.5 h-1.5 rounded-full bg-success-400 ml-auto flex-shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.3)]" />
         </div>
       </div>
     </aside>

@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, SlidersHorizontal } from 'lucide-react';
-import type { QuestStatus } from '../types';
-import { QUEST_STATUS_LABELS } from '../types';
 import { mockQuests, getAgentById } from '../data/mock';
 import PageHeader from '../components/shared/PageHeader';
 import StatusBadge from '../components/shared/StatusBadge';
@@ -17,7 +15,7 @@ const filterTabs: { value: string; label: string }[] = [
   { value: 'in_progress', label: 'In Bearbeitung' },
   { value: 'blocked', label: 'Blockiert' },
   { value: 'waiting', label: 'Wartend' },
-  { value: 'in_review', label: 'In Pruefung' },
+  { value: 'in_review', label: 'In Prüfung' },
   { value: 'ready', label: 'Bereit' },
   { value: 'draft', label: 'Entwurf' },
   { value: 'done', label: 'Erledigt' },
@@ -49,7 +47,7 @@ export default function Quests() {
         }
       />
 
-      <div className="px-6 py-3 border-b border-surface-700/50 bg-surface-900/30">
+      <div className="px-6 py-3 border-b border-white/[0.06] bg-surface-900/40">
         <div className="flex items-center gap-3 mb-3">
           <div className="relative flex-1 max-w-sm">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
@@ -71,10 +69,10 @@ export default function Quests() {
             <button
               key={tab.value}
               onClick={() => setFilter(tab.value)}
-              className={`text-xs px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${
+              className={`text-xs px-3 py-1.5 rounded-md whitespace-nowrap transition-colors border ${
                 filter === tab.value
-                  ? 'bg-surface-700 text-surface-100 font-medium'
-                  : 'text-surface-500 hover:text-surface-300 hover:bg-surface-800'
+                  ? 'bg-gold-500/10 text-gold-400 border-gold-500/30 font-medium'
+                  : 'text-surface-500 hover:text-surface-300 hover:bg-surface-800 border-white/5'
               }`}
             >
               {tab.label}
@@ -89,7 +87,7 @@ export default function Quests() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="divide-y divide-surface-700/30">
+        <div className="divide-y divide-white/[0.04]">
           {filtered.map(quest => (
             <button
               key={quest.id}
