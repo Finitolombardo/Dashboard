@@ -10,6 +10,7 @@ import Campaigns from './pages/Campaigns';
 import SessionDetail from './pages/SessionDetail';
 import Signals from './pages/Signals';
 import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/sessions/:id" element={<SessionDetail />} />
           <Route path="/signals" element={<Signals />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </BrowserRouter>

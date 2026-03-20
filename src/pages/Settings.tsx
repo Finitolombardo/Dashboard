@@ -42,14 +42,17 @@ export default function Settings() {
 
 function SettingsCard({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) {
   return (
-    <div className="card-hover p-4 flex items-center gap-4">
+    <div className="card p-4 flex items-center gap-4 opacity-60 cursor-default">
       <div className="w-10 h-10 rounded-lg bg-surface-900/70 border border-white/[0.06] flex items-center justify-center flex-shrink-0">
         <Icon size={18} className="text-surface-400" />
       </div>
-      <div>
+      <div className="flex-1">
         <h3 className="text-sm font-medium text-surface-200">{title}</h3>
         <p className="text-2xs text-surface-500 mt-0.5">{description}</p>
       </div>
+      <span className="text-2xs text-surface-500 border border-white/[0.08] rounded px-1.5 py-0.5 flex-shrink-0">
+        Demnächst
+      </span>
     </div>
   );
 }
