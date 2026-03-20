@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Signal } from '../types';
 import { mockSignals } from '../data/mock';
+import { useQuests } from '../lib/useQuests';
 import PriorityFeed from '../components/mission-control/PriorityFeed';
 import FocusWorkspace from '../components/mission-control/FocusWorkspace';
 import ContextRail from '../components/mission-control/ContextRail';
@@ -8,9 +9,11 @@ import { Radio } from 'lucide-react';
 
 export default function MissionControl() {
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
+  const { quests } = useQuests();
 
   const openCount = mockSignals.filter(signal => signal.status === 'open').length;
   const criticalCount = mockSignals.filter(signal => signal.severity === 'critical' && signal.status === 'open').length;
+  const activeQuestCount = quests.filter(q => ['in_progress', 'in_review', 'blocked'].includes(q.status)).length;
 
   return (
     <div className="relative h-screen overflow-hidden bg-surface-950 text-surface-200">
@@ -41,6 +44,9 @@ export default function MissionControl() {
               )}
               <span className="inline-flex items-center rounded-full border border-white/5 bg-surface-900/70 px-2 py-0.5 text-2xs tabular-nums text-surface-400">
                 {openCount} offen
+              </span>
+              <span className="inline-flex items-center rounded-full border border-gold-500/15 bg-gold-500/5 px-2 py-0.5 text-2xs tabular-nums text-gold-400">
+                {activeQuestCount} Quests aktiv
               </span>
             </div>
           </div>
