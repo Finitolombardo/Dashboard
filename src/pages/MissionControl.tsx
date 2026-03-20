@@ -9,56 +9,76 @@ import { Radio } from 'lucide-react';
 export default function MissionControl() {
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
 
-  const openCount = mockSignals.filter(s => s.status === 'open').length;
-  const criticalCount = mockSignals.filter(s => s.severity === 'critical' && s.status === 'open').length;
+  const openCount = mockSignals.filter(signal => signal.status === 'open').length;
+  const criticalCount = mockSignals.filter(signal => signal.severity === 'critical' && signal.status === 'open').length;
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="flex items-center justify-between px-6 py-2.5 border-b border-surface-700/30 bg-surface-900/40">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Radio size={15} className="text-gold-500" />
-            <h1 className="text-sm font-semibold text-surface-100 tracking-wide">Mission Control</h1>
-          </div>
-          <div className="w-px h-4 bg-surface-700/40 mx-1" />
-          <div className="flex items-center gap-2">
-            {criticalCount > 0 && (
-              <span className="text-2xs bg-danger-500/15 text-danger-400 px-2 py-0.5 rounded font-medium tabular-nums">
-                {criticalCount} kritisch
+    <div className="relative h-screen overflow-hidden bg-surface-950 text-surface-200">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(201,144,30,0.08),transparent_28%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.04),transparent_24%),linear-gradient(180deg,rgba(8,9,11,0.96),rgba(8,9,11,1))]" />
+
+      <div className="relative z-10 flex h-full flex-col">
+        <header className="flex items-center justify-between border-b border-white/5 bg-surface-950/80 px-6 py-3 backdrop-blur-xl">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Radio size={15} className="text-gold-400" />
+              <div>
+                <h1 className="text-sm font-semibold tracking-[0.18em] text-surface-50 uppercase">
+                  Mission Control
+                </h1>
+                <p className="text-2xs text-surface-500">
+                  Operative Leitstelle für Signal-, Quest- und Workflow-Steuerung
+                </p>
+              </div>
+            </div>
+
+            <div className="hidden h-8 w-px bg-white/5 sm:block" />
+
+            <div className="flex items-center gap-2">
+              {criticalCount > 0 && (
+                <span className="inline-flex items-center rounded-full border border-danger-500/25 bg-danger-500/10 px-2 py-0.5 text-2xs font-medium tabular-nums text-danger-300">
+                  {criticalCount} kritisch
+                </span>
+              )}
+              <span className="inline-flex items-center rounded-full border border-white/5 bg-surface-900/70 px-2 py-0.5 text-2xs tabular-nums text-surface-400">
+                {openCount} offen
               </span>
-            )}
-            <span className="text-2xs text-surface-500 tabular-nums">
-              {openCount} offen
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 rounded-full border border-success-500/15 bg-success-500/10 px-2 py-0.5 text-2xs text-surface-300">
+              <div className="h-1.5 w-1.5 rounded-full bg-success-400 shadow-[0_0_10px_rgba(52,211,153,0.25)]" />
+              <span>Live</span>
+            </div>
+            <span className="font-mono text-2xs tabular-nums text-surface-500">
+              {new Date().toLocaleString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </span>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-2xs text-surface-500">
-            <div className="w-1.5 h-1.5 rounded-full bg-success-500 animate-pulse-slow" />
-            <span>Live</span>
-          </div>
-          <span className="text-2xs text-surface-600 font-mono">
-            {new Date().toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
-      </div>
+        </header>
 
-      <div className="flex-1 flex min-h-0">
-        <div className="w-[360px] border-r border-surface-700/30 flex-shrink-0 bg-surface-900/20">
-          <PriorityFeed
-            signals={mockSignals}
-            selectedId={selectedSignal?.id || null}
-            onSelect={setSelectedSignal}
-          />
-        </div>
+        <main className="flex min-h-0 flex-1">
+          <aside className="w-[356px] flex-shrink-0 border-r border-white/5 bg-surface-900/35">
+            <PriorityFeed
+              signals={mockSignals}
+              selectedId={selectedSignal?.id || null}
+              onSelect={setSelectedSignal}
+            />
+          </aside>
 
-        <div className="flex-1 min-w-0 bg-surface-950">
-          <FocusWorkspace signal={selectedSignal} />
-        </div>
+          <section className="min-w-0 flex-1 border-x border-white/[0.03] bg-[linear-gradient(180deg,rgba(13,14,18,0.96),rgba(8,9,11,1))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+            <FocusWorkspace signal={selectedSignal} />
+          </section>
 
-        <div className="w-[270px] border-l border-surface-700/30 flex-shrink-0 bg-surface-900/20">
-          <ContextRail signal={selectedSignal} />
-        </div>
+          <aside className="w-[292px] flex-shrink-0 border-l border-white/5 bg-surface-900/30">
+            <ContextRail signal={selectedSignal} />
+          </aside>
+        </main>
       </div>
     </div>
   );

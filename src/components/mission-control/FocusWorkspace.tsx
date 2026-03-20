@@ -1,3 +1,4 @@
+import type { ReactNode, ElementType } from 'react';
 import type { Signal, SignalType } from '../../types';
 import { getQuestById, getWorkflowById, getCampaignById, getSessionById, getAgentById } from '../../data/mock';
 import StatusBadge from '../shared/StatusBadge';
@@ -18,7 +19,6 @@ import {
   Megaphone,
   MonitorPlay,
   Clock,
-  Zap,
   ArrowUpRight,
   Shield,
 } from 'lucide-react';
@@ -27,19 +27,49 @@ interface FocusWorkspaceProps {
   signal: Signal | null;
 }
 
+
+const actionBaseClass =
+  'inline-flex items-center gap-2 rounded-md border px-3.5 py-2 text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-gold-400/30 disabled:cursor-not-allowed disabled:opacity-50';
+
+function ActionButton({
+  variant,
+  icon: Icon,
+  children,
+  onClick,
+}: {
+  variant: 'primary' | 'secondary' | 'ghost';
+  icon: ElementType;
+  children: ReactNode;
+  onClick?: () => void;
+}) {
+  const classes =
+    variant === 'primary'
+      ? 'border-gold-500/30 bg-gold-500/90 text-surface-950 shadow-[0_12px_28px_rgba(201,144,30,0.16)] hover:-translate-y-px hover:bg-gold-400'
+      : variant === 'secondary'
+        ? 'border-white/5 bg-surface-900/80 text-surface-200 hover:border-white/10 hover:bg-surface-850/80'
+        : 'border-white/5 bg-transparent text-surface-400 hover:border-white/10 hover:bg-surface-900/70 hover:text-surface-200';
+
+  return (
+    <button onClick={onClick} className={`${actionBaseClass} ${classes}`}>
+      <Icon size={13} />
+      {children}
+    </button>
+  );
+}
+
 export default function FocusWorkspace({ signal }: FocusWorkspaceProps) {
   const navigate = useNavigate();
 
   if (!signal) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-full bg-surface-850 border border-surface-700/30 flex items-center justify-center mx-auto mb-4">
+      <div className="flex h-full items-center justify-center px-6">
+        <div className="max-w-sm text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-white/5 bg-surface-900/70 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
             <Crosshair size={22} className="text-surface-500" />
           </div>
-          <p className="text-sm text-surface-400 font-medium">Signal auswählen</p>
-          <p className="text-2xs text-surface-600 mt-1.5 max-w-[200px] mx-auto leading-relaxed">
-            Wähle ein Element aus dem Prioritäts-Feed, um die Details hier anzuzeigen.
+          <p className="text-sm font-medium text-surface-100">Signal auswählen</p>
+          <p className="mt-2 text-2xs leading-relaxed text-surface-500">
+            Wähle links ein Signal aus, um den operativen Kontext, die Risiken und die verknüpften Objekte im Zentrum zu sehen.
           </p>
         </div>
       </div>
@@ -53,69 +83,76 @@ export default function FocusWorkspace({ signal }: FocusWorkspaceProps) {
   const agent = quest?.agent_id ? getAgentById(quest.agent_id) : undefined;
 
   const operationalSummary = getOperationalSummary(signal, quest, workflow, campaign, session);
+  const workflowHealth = workflow ? mapHealthStatus(workflow.execution_health) : undefined;
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 py-5 border-b border-surface-700/30">
-        <div className="flex items-start justify-between gap-6">
+      <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(13,14,18,0.96),rgba(10,11,14,0.92))] px-6 py-6">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
               <SignalTypeTag type={signal.type} />
               <PriorityTag priority={signal.severity} />
               <StatusBadge status={signal.status} dot />
+              {signal.source && (
+                <span className="rounded-full border border-white/5 bg-surface-900/70 px-2 py-0.5 text-2xs font-medium text-surface-400">
+                  Quelle: {signal.source}
+                </span>
+              )}
             </div>
-            <h2 className="text-lg font-semibold text-surface-50 leading-snug tracking-tight">{signal.title}</h2>
-            <p className="text-sm text-surface-400 mt-1.5 leading-relaxed">{signal.summary}</p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-2 mt-4">
-          <SignalActions signal={signal} quest={quest} campaign={campaign} session={session} navigate={navigate} />
+            <h2 className="max-w-4xl text-2xl font-semibold tracking-tight text-surface-50 lg:text-[1.9rem]">
+              {signal.title}
+            </h2>
+            <p className="mt-3 max-w-4xl text-sm leading-relaxed text-surface-300">
+              {signal.summary}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+            <SignalActions signal={signal} quest={quest} campaign={campaign} session={session} navigate={navigate} />
+          </div>
         </div>
       </div>
 
-      <div className="px-6 py-5 space-y-5">
+      <div className="space-y-6 px-6 py-6">
         {operationalSummary && (
-          <div className="bg-surface-900/60 border border-surface-700/30 rounded-lg p-4">
-            <h3 className="section-label mb-3">Zusammenfassung</h3>
-            <div className="space-y-3">
-              {operationalSummary.what && (
-                <SummaryRow label="Was ist passiert?" value={operationalSummary.what} />
-              )}
-              {operationalSummary.why && (
-                <SummaryRow label="Warum ist das relevant?" value={operationalSummary.why} />
-              )}
-              {operationalSummary.blocked && (
-                <SummaryRow label="Was wird blockiert?" value={operationalSummary.blocked} severity="danger" />
-              )}
-              {operationalSummary.consequence && (
-                <SummaryRow label="Ohne Eingriff?" value={operationalSummary.consequence} severity="warning" />
-              )}
+          <section className="rounded-2xl border border-white/5 bg-surface-900/65 p-4 shadow-[0_20px_40px_rgba(0,0,0,0.18)]">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="section-label mb-1">Operatives Lagebild</p>
+                <h3 className="text-sm font-semibold text-surface-100">Was ist passiert und was tun wir jetzt?</h3>
+              </div>
+            </div>
+
+            <div className="grid gap-3 xl:grid-cols-2">
+              {operationalSummary.what && <SummaryRow label="Was ist passiert?" value={operationalSummary.what} />}
+              {operationalSummary.why && <SummaryRow label="Warum ist das relevant?" value={operationalSummary.why} />}
+              {operationalSummary.blocked && <SummaryRow label="Was wird blockiert?" value={operationalSummary.blocked} severity="danger" />}
+              {operationalSummary.consequence && <SummaryRow label="Ohne Eingriff?" value={operationalSummary.consequence} severity="warning" />}
               {operationalSummary.recommendation && (
                 <SummaryRow label="Empfohlene Aktion" value={operationalSummary.recommendation} severity="gold" />
               )}
             </div>
-          </div>
+          </section>
         )}
 
         {(quest || workflow || campaign || session) && (
-          <div>
-            <h3 className="section-label mb-3">Verknüpfte Objekte</h3>
-            <div className="space-y-3">
-              {quest && (
-                <LinkedQuestCard quest={quest} agent={agent} onClick={() => navigate(`/quests/${quest.id}`)} />
-              )}
-              {workflow && (
-                <LinkedWorkflowCard workflow={workflow} onClick={() => navigate('/systems')} />
-              )}
-              {campaign && (
-                <LinkedCampaignCard campaign={campaign} onClick={() => navigate('/campaigns')} />
-              )}
-              {session && (
-                <LinkedSessionCard session={session} onClick={() => navigate(`/sessions/${session.id}`)} />
-              )}
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="section-label mb-1">Verknüpfte Objekte</p>
+                <h3 className="text-sm font-semibold text-surface-100">Quest, Workflow, Kampagne und Sitzung im Kontext</h3>
+              </div>
             </div>
-          </div>
+
+            <div className="space-y-3">
+              {quest && <LinkedQuestCard quest={quest} agent={agent} onClick={() => navigate(`/quests/${quest.id}`)} />}
+              {workflow && <LinkedWorkflowCard workflow={workflow} health={workflowHealth} onClick={() => navigate('/systems')} />}
+              {campaign && <LinkedCampaignCard campaign={campaign} onClick={() => navigate('/campaigns')} />}
+              {session && <LinkedSessionCard session={session} onClick={() => navigate(`/sessions/${session.id}`)} />}
+            </div>
+          </section>
         )}
       </div>
     </div>
@@ -135,63 +172,81 @@ function SignalActions({
   session: ReturnType<typeof getSessionById>;
   navigate: ReturnType<typeof useNavigate>;
 }) {
-  const actionMap: Partial<Record<SignalType, React.ReactNode>> = {
+  const actionMap: Partial<Record<SignalType, ReactNode>> = {
     approval: (
       <>
-        <button className="btn-primary"><CheckCircle2 size={13} /> Freigeben</button>
-        <button className="btn-secondary"><XCircle size={13} /> Änderungen anfordern</button>
+        <ActionButton variant="primary" icon={CheckCircle2}>
+          Freigeben
+        </ActionButton>
+        <ActionButton variant="secondary" icon={XCircle}>
+          Änderungen anfordern
+        </ActionButton>
       </>
     ),
     failed_execution: (
       <>
-        <button className="btn-primary"><RotateCcw size={13} /> Erneut ausführen</button>
-        <button className="btn-secondary"><Crosshair size={13} /> Debug-Quest erstellen</button>
+        <ActionButton variant="primary" icon={RotateCcw}>
+          Erneut ausführen
+        </ActionButton>
+        <ActionButton variant="secondary" icon={Crosshair}>
+          Debug-Quest erstellen
+        </ActionButton>
       </>
     ),
     blocker: (
       <>
-        <button className="btn-primary" onClick={() => quest && navigate(`/quests/${quest.id}`)}>
-          <ArrowRight size={13} /> Zur Quest
-        </button>
-        <button className="btn-secondary"><CheckCircle2 size={13} /> Blocker auflösen</button>
+        <ActionButton variant="primary" icon={ArrowRight} onClick={() => quest && navigate(`/quests/${quest.id}`)}>
+          Zur Quest
+        </ActionButton>
+        <ActionButton variant="secondary" icon={CheckCircle2}>
+          Blocker auflösen
+        </ActionButton>
       </>
     ),
     agent_question: (
       <>
-        <button className="btn-primary" onClick={() => quest && navigate(`/quests/${quest.id}`)}>
-          <MessageSquare size={13} /> Antworten
-        </button>
+        <ActionButton variant="primary" icon={MessageSquare} onClick={() => quest && navigate(`/quests/${quest.id}`)}>
+          Antworten
+        </ActionButton>
       </>
     ),
     proposed_quest: (
       <>
-        <button className="btn-primary"><Crosshair size={13} /> Quest erstellen</button>
-        <button className="btn-ghost">Verwerfen</button>
+        <ActionButton variant="primary" icon={Crosshair}>
+          Quest erstellen
+        </ActionButton>
+        <ActionButton variant="ghost" icon={XCircle}>
+          Verwerfen
+        </ActionButton>
       </>
     ),
     campaign_underperformance: (
       <>
-        <button className="btn-primary"><Crosshair size={13} /> Optimierungs-Quest</button>
+        <ActionButton variant="primary" icon={Crosshair}>
+          Optimierungs-Quest
+        </ActionButton>
         {campaign && (
-          <button className="btn-secondary" onClick={() => navigate('/campaigns')}>
-            <Megaphone size={13} /> Kampagne ansehen
-          </button>
+          <ActionButton variant="secondary" icon={Megaphone} onClick={() => navigate('/campaigns')}>
+            Kampagne ansehen
+          </ActionButton>
         )}
       </>
     ),
     stuck_session: (
       <>
-        <button className="btn-primary" onClick={() => session && navigate(`/sessions/${session.id}`)}>
-          <MonitorPlay size={13} /> Sitzung öffnen
-        </button>
-        <button className="btn-secondary"><Crosshair size={13} /> Quest erstellen</button>
+        <ActionButton variant="primary" icon={MonitorPlay} onClick={() => session && navigate(`/sessions/${session.id}`)}>
+          Sitzung öffnen
+        </ActionButton>
+        <ActionButton variant="secondary" icon={Crosshair}>
+          Quest erstellen
+        </ActionButton>
       </>
     ),
     system_warning: (
       <>
-        <button className="btn-secondary" onClick={() => navigate('/systems')}>
-          <Shield size={13} /> Systeme ansehen
-        </button>
+        <ActionButton variant="secondary" icon={Shield} onClick={() => navigate('/systems')}>
+          Systeme ansehen
+        </ActionButton>
       </>
     ),
   };
@@ -199,17 +254,28 @@ function SignalActions({
   return <>{actionMap[signal.type] || null}</>;
 }
 
-function SummaryRow({ label, value, severity }: { label: string; value: string; severity?: 'danger' | 'warning' | 'gold' }) {
-  const valueColor =
-    severity === 'danger' ? 'text-danger-400' :
-    severity === 'warning' ? 'text-warning-400' :
-    severity === 'gold' ? 'text-gold-400' :
-    'text-surface-300';
+function SummaryRow({
+  label,
+  value,
+  severity,
+}: {
+  label: string;
+  value: string;
+  severity?: 'danger' | 'warning' | 'gold';
+}) {
+  const toneClass =
+    severity === 'danger'
+      ? 'border-danger-500/15 bg-danger-500/5 text-danger-300'
+      : severity === 'warning'
+        ? 'border-warning-500/15 bg-warning-500/5 text-warning-300'
+        : severity === 'gold'
+          ? 'border-gold-500/15 bg-gold-500/5 text-gold-200'
+          : 'border-white/5 bg-surface-900/70 text-surface-300';
 
   return (
-    <div>
-      <dt className="text-2xs text-surface-500 font-medium mb-0.5">{label}</dt>
-      <dd className={`text-sm leading-relaxed ${valueColor}`}>{value}</dd>
+    <div className={`rounded-xl border p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ${toneClass}`}>
+      <dt className="mb-1 text-2xs font-semibold uppercase tracking-[0.18em] text-surface-500">{label}</dt>
+      <dd className="text-sm leading-relaxed">{value}</dd>
     </div>
   );
 }
@@ -224,82 +290,83 @@ function LinkedQuestCard({
   onClick: () => void;
 }) {
   return (
-    <div className="bg-surface-850/60 border border-surface-700/30 rounded-lg p-4 hover:border-surface-600/40 transition-colors">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Crosshair size={13} className="text-gold-500" />
-          <span className="section-label">Verknüpfte Quest</span>
-        </div>
-        <button onClick={onClick} className="text-2xs text-gold-400 hover:text-gold-300 flex items-center gap-0.5 transition-colors font-medium">
-          Öffnen <ArrowUpRight size={10} />
-        </button>
-      </div>
-      <p className="text-sm font-medium text-surface-100 mb-2">{quest.title}</p>
-      <div className="flex items-center gap-2 mb-2">
+    <LinkedCardShell
+      icon={Crosshair}
+      title="Verknüpfte Quest"
+      actionLabel="Öffnen"
+      onClick={onClick}
+      accentClass="text-gold-300"
+    >
+      <p className="mb-3 text-sm font-medium text-surface-50">{quest.title}</p>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <StatusBadge status={quest.status} dot />
         <PriorityTag priority={quest.priority} />
         {agent && <AgentChip agent={agent} />}
       </div>
+
       {quest.progress > 0 && (
-        <div className="mt-2">
-          <div className="flex items-center justify-between mb-1">
+        <div className="mb-3">
+          <div className="mb-1 flex items-center justify-between">
             <span className="text-2xs text-surface-500">Fortschritt</span>
-            <span className="text-2xs text-surface-400 tabular-nums">{quest.progress}%</span>
+            <span className="text-2xs tabular-nums text-surface-400">{quest.progress}%</span>
           </div>
           <ProgressBar value={quest.progress} />
         </div>
       )}
-      {quest.current_step && (
-        <div className="mt-2 text-2xs">
-          <span className="text-surface-500">Aktuell:</span>{' '}
-          <span className="text-surface-300">{quest.current_step}</span>
-        </div>
-      )}
-      {quest.blocker && (
-        <div className="flex items-center gap-1.5 mt-2 text-2xs text-danger-400 bg-danger-500/5 px-2 py-1 rounded">
-          <AlertTriangle size={10} className="flex-shrink-0" />
-          <span>{quest.blocker}</span>
-        </div>
-      )}
-    </div>
+
+      <div className="space-y-2 text-2xs">
+        {quest.current_step && (
+          <InfoRow label="Aktuell" value={quest.current_step} />
+        )}
+        {quest.next_step && (
+          <InfoRow label="Nächster Schritt" value={quest.next_step} />
+        )}
+        {quest.blocker && (
+          <div className="flex items-start gap-2 rounded-lg border border-danger-500/15 bg-danger-500/5 px-2.5 py-2 text-danger-300">
+            <AlertTriangle size={10} className="mt-0.5 flex-shrink-0" />
+            <span className="leading-relaxed">{quest.blocker}</span>
+          </div>
+        )}
+      </div>
+    </LinkedCardShell>
   );
 }
 
 function LinkedWorkflowCard({
   workflow,
+  health,
   onClick,
 }: {
   workflow: NonNullable<ReturnType<typeof getWorkflowById>>;
+  health?: ReturnType<typeof mapHealthStatus>;
   onClick: () => void;
 }) {
   return (
-    <div className="bg-surface-850/60 border border-surface-700/30 rounded-lg p-4 hover:border-surface-600/40 transition-colors">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Workflow size={13} className="text-surface-400" />
-          <span className="section-label">Verknüpfter Workflow</span>
-        </div>
-        <button onClick={onClick} className="text-2xs text-gold-400 hover:text-gold-300 flex items-center gap-0.5 transition-colors font-medium">
-          Öffnen <ArrowUpRight size={10} />
-        </button>
-      </div>
-      <p className="text-sm font-medium text-surface-100 mb-2">{workflow.name}</p>
-      <div className="flex items-center gap-3">
+    <LinkedCardShell
+      icon={Workflow}
+      title="Verknüpfter Workflow"
+      actionLabel="Öffnen"
+      onClick={onClick}
+      accentClass="text-surface-400"
+    >
+      <p className="mb-3 text-sm font-medium text-surface-50">{workflow.name}</p>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <StatusBadge status={workflow.status} dot />
-        <div className="flex items-center gap-1 text-2xs text-surface-500">
-          <Zap size={10} />
-          <span>Gesundheit:</span>
-          <StatusBadge status={workflow.execution_health as 'healthy'} />
-        </div>
+        {health && <StatusBadge status={health} />}
       </div>
+
       {workflow.last_run && (
-        <div className="mt-2 flex items-center gap-1 text-2xs text-surface-500">
+        <div className="flex items-center gap-1.5 text-2xs text-surface-500">
           <Clock size={10} />
-          <span>Letzter Lauf:</span>
-          <span className="text-surface-400">{new Date(workflow.last_run).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+          <span>Letzter Lauf</span>
+          <span className="text-surface-400">
+            {new Date(workflow.last_run).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+          </span>
         </div>
       )}
-    </div>
+    </LinkedCardShell>
   );
 }
 
@@ -314,24 +381,22 @@ function LinkedCampaignCard({
   const replyRate = campaign.sent > 0 ? ((campaign.replied / campaign.sent) * 100).toFixed(1) : '0';
 
   return (
-    <div className="bg-surface-850/60 border border-surface-700/30 rounded-lg p-4 hover:border-surface-600/40 transition-colors">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Megaphone size={13} className="text-surface-400" />
-          <span className="section-label">Verknüpfte Kampagne</span>
-        </div>
-        <button onClick={onClick} className="text-2xs text-gold-400 hover:text-gold-300 flex items-center gap-0.5 transition-colors font-medium">
-          Öffnen <ArrowUpRight size={10} />
-        </button>
-      </div>
-      <p className="text-sm font-medium text-surface-100 mb-2">{campaign.name}</p>
-      <div className="grid grid-cols-4 gap-3 text-2xs">
+    <LinkedCardShell
+      icon={Megaphone}
+      title="Verknüpfte Kampagne"
+      actionLabel="Öffnen"
+      onClick={onClick}
+      accentClass="text-surface-400"
+    >
+      <p className="mb-3 text-sm font-medium text-surface-50">{campaign.name}</p>
+
+      <div className="grid grid-cols-2 gap-3 text-2xs xl:grid-cols-4">
         <MetricCell label="Gesendet" value={campaign.sent.toLocaleString('de-DE')} />
         <MetricCell label="Open-Rate" value={`${openRate}%`} />
         <MetricCell label="Reply-Rate" value={`${replyRate}%`} />
         <MetricCell label="Bounce" value={`${campaign.bounce_rate}%`} warn={campaign.bounce_rate > 5} />
       </div>
-    </div>
+    </LinkedCardShell>
   );
 }
 
@@ -343,36 +408,79 @@ function LinkedSessionCard({
   onClick: () => void;
 }) {
   return (
-    <div className="bg-surface-850/60 border border-surface-700/30 rounded-lg p-4 hover:border-surface-600/40 transition-colors">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <MonitorPlay size={13} className="text-surface-400" />
-          <span className="section-label">Verknüpfte Sitzung</span>
-        </div>
-        <button onClick={onClick} className="text-2xs text-gold-400 hover:text-gold-300 flex items-center gap-0.5 transition-colors font-medium">
-          Öffnen <ArrowUpRight size={10} />
-        </button>
-      </div>
-      <p className="text-sm font-medium text-surface-100 mb-2">{session.name}</p>
-      <div className="flex items-center gap-2 mb-2">
+    <LinkedCardShell
+      icon={MonitorPlay}
+      title="Verknüpfte Sitzung"
+      actionLabel="Öffnen"
+      onClick={onClick}
+      accentClass="text-surface-400"
+    >
+      <p className="mb-3 text-sm font-medium text-surface-50">{session.name}</p>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <StatusBadge status={session.status} dot />
         <StatusBadge status={session.health} />
-        <span className="text-2xs text-surface-500 font-mono">{session.current_model}</span>
+        <span className="rounded-full border border-white/5 bg-surface-900/70 px-2 py-0.5 text-2xs font-mono text-surface-400">
+          {session.current_model}
+        </span>
       </div>
-      {session.last_message && (
-        <p className="text-2xs text-surface-400 italic bg-surface-900/40 px-2.5 py-1.5 rounded leading-relaxed">
-          &ldquo;{session.last_message}&rdquo;
-        </p>
-      )}
+
+      <p className="rounded-lg border border-white/5 bg-surface-900/60 px-3 py-2 text-2xs leading-relaxed text-surface-400 italic">
+        &ldquo;{session.last_message}&rdquo;
+      </p>
+    </LinkedCardShell>
+  );
+}
+
+function LinkedCardShell({
+  icon: Icon,
+  title,
+  actionLabel,
+  onClick,
+  accentClass,
+  children,
+}: {
+  icon: ElementType;
+  title: string;
+  actionLabel: string;
+  onClick: () => void;
+  accentClass: string;
+  children: ReactNode;
+}) {
+  return (
+    <article className="rounded-2xl border border-white/5 bg-surface-900/70 p-4 shadow-[0_18px_36px_rgba(0,0,0,0.2)] transition-all duration-200 hover:border-white/10 hover:bg-surface-850/80">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Icon size={13} className={accentClass} />
+          <span className="section-label">{title}</span>
+        </div>
+        <button
+          onClick={onClick}
+          className="inline-flex items-center gap-0.5 rounded-full border border-gold-500/15 bg-gold-500/10 px-2 py-0.5 text-2xs font-medium text-gold-300 transition-colors hover:border-gold-500/20 hover:bg-gold-500/15 hover:text-gold-200"
+        >
+          {actionLabel}
+          <ArrowUpRight size={10} />
+        </button>
+      </div>
+      {children}
+    </article>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-white/5 bg-surface-900/60 px-3 py-2">
+      <span className="mb-0.5 block text-2xs uppercase tracking-[0.16em] text-surface-500">{label}</span>
+      <span className="block text-xs leading-relaxed text-surface-300">{value}</span>
     </div>
   );
 }
 
 function MetricCell({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
-    <div>
-      <p className="text-surface-500 mb-0.5">{label}</p>
-      <p className={`font-medium tabular-nums ${warn ? 'text-danger-400' : 'text-surface-200'}`}>{value}</p>
+    <div className="rounded-lg border border-white/5 bg-surface-900/60 px-3 py-2">
+      <p className="mb-0.5 text-2xs uppercase tracking-[0.16em] text-surface-500">{label}</p>
+      <p className={`font-medium tabular-nums ${warn ? 'text-danger-300' : 'text-surface-200'}`}>{value}</p>
     </div>
   );
 }
@@ -383,6 +491,12 @@ interface OperationalSummary {
   blocked?: string;
   consequence?: string;
   recommendation?: string;
+}
+
+function mapHealthStatus(health: string): 'healthy' | 'degraded' | 'error' {
+  if (health === 'failing' || health === 'error') return 'error';
+  if (health === 'degraded') return 'degraded';
+  return 'healthy';
 }
 
 function getOperationalSummary(

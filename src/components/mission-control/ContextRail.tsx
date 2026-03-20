@@ -1,3 +1,4 @@
+import type { ReactNode, ElementType } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Signal } from '../../types';
 import { getQuestById, getAgentById, getWorkflowById, getCampaignById, getSessionById } from '../../data/mock';
@@ -25,17 +26,21 @@ interface ContextRailProps {
   signal: Signal | null;
 }
 
+
 export default function ContextRail({ signal }: ContextRailProps) {
   const navigate = useNavigate();
 
   if (!signal) {
     return (
-      <div className="h-full flex flex-col">
-        <div className="px-4 py-3 border-b border-surface-700/30">
-          <h3 className="section-label">Kontext</h3>
+      <div className="flex h-full flex-col">
+        <div className="border-b border-white/5 px-4 py-4">
+          <p className="section-label mb-1">Kontext</p>
+          <h3 className="text-sm font-semibold text-surface-100">Keine Auswahl</h3>
         </div>
-        <div className="flex-1 flex items-center justify-center px-4">
-          <p className="text-2xs text-surface-600 text-center">Kein Element ausgewählt</p>
+        <div className="flex flex-1 items-center justify-center px-4">
+          <p className="rounded-full border border-white/5 bg-surface-900/60 px-3 py-1.5 text-center text-2xs text-surface-500">
+            Kein Element ausgewählt
+          </p>
         </div>
       </div>
     );
@@ -50,28 +55,34 @@ export default function ContextRail({ signal }: ContextRailProps) {
   const actions = getContextualActions(signal, quest, workflow, campaign, session, navigate);
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto">
-      <div className="px-4 py-3 border-b border-surface-700/30">
-        <h3 className="section-label">Kontext</h3>
+    <div className="flex h-full flex-col overflow-y-auto">
+      <div className="border-b border-white/5 px-4 py-4">
+        <p className="section-label mb-1">Kontext</p>
+        <h3 className="text-sm font-semibold text-surface-100">Operativer Randkontext</h3>
+        <p className="mt-1 text-2xs leading-relaxed text-surface-500">
+          Zuständigkeit, Bezug, Status und direkte nächste Schritte in einer ruhigen Seitenleiste.
+        </p>
       </div>
 
-      <div className="flex-1 px-3 py-3 space-y-4">
+      <div className="flex-1 space-y-4 px-4 py-4">
         {agent && (
-          <RailSection title="Zuständig">
-            <div className="flex items-center gap-2 mb-1">
+          <RailSection title="Zuständig" subtitle="Welcher Agent trägt die operative Verantwortung?">
+            <div className="space-y-2">
               <AgentChip agent={agent} size="md" />
-            </div>
-            <p className="text-2xs text-surface-500 mt-1">{agent.role}</p>
-            <div className="flex items-center gap-1 mt-1 text-2xs text-surface-500">
-              <span className="font-mono text-surface-400">{agent.current_model}</span>
-              <span className="text-surface-600">|</span>
-              <StatusBadge status={agent.status} />
+              <div className="flex items-center gap-1.5 text-2xs text-surface-500">
+                <span className="truncate">{agent.role}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-2xs text-surface-500">
+                <span className="font-mono text-surface-400">{agent.current_model}</span>
+                <span className="text-surface-600">|</span>
+                <StatusBadge status={agent.status} />
+              </div>
             </div>
           </RailSection>
         )}
 
         {(quest || workflow || campaign || session) && (
-          <RailSection title="Operativer Bezug">
+          <RailSection title="Operativer Bezug" subtitle="Direkte Verknüpfungen zum Signal">
             <div className="space-y-2">
               {quest && (
                 <RailLink
@@ -110,109 +121,169 @@ export default function ContextRail({ signal }: ContextRailProps) {
         )}
 
         {quest && (quest.current_step || quest.next_step || quest.blocker) && (
-          <RailSection title="Quest-Status">
-            {quest.current_step && (
-              <div className="mb-1.5">
-                <span className="text-2xs text-surface-500 block">Aktueller Schritt</span>
-                <p className="text-xs text-surface-300 leading-snug">{quest.current_step}</p>
-              </div>
-            )}
-            {quest.next_step && (
-              <div className="mb-1.5">
-                <span className="text-2xs text-surface-500 block">Nächster Schritt</span>
-                <p className="text-xs text-surface-300 leading-snug">{quest.next_step}</p>
-              </div>
-            )}
-            {quest.blocker && (
-              <div>
-                <span className="text-2xs text-danger-400 block">Blocker</span>
-                <p className="text-xs text-danger-300 leading-snug">{quest.blocker}</p>
-              </div>
-            )}
+          <RailSection title="Quest-Status" subtitle="Was läuft gerade, was kommt als Nächstes?">
+            <div className="space-y-2">
+              {quest.current_step && (
+                <RailDetail label="Aktueller Schritt" value={quest.current_step} />
+              )}
+              {quest.next_step && <RailDetail label="Nächster Schritt" value={quest.next_step} />}
+              {quest.blocker && (
+                <RailDetail label="Blocker" value={quest.blocker} danger />
+              )}
+            </div>
           </RailSection>
         )}
 
-        <RailSection title="Kontext">
+        <RailSection title="Kontext" subtitle="Verweise und Meta-Informationen zum Signal">
           <div className="space-y-1.5">
             <DocLink label="Outreach Playbook" />
             <DocLink label="Kampagnen-Strategie Q1" />
             {quest && <DocLink label="Agent-Onboarding" />}
           </div>
-          <div className="flex justify-between text-2xs mt-3 pt-2 border-t border-surface-700/20">
-            <span className="text-surface-500">Erstellt</span>
-            <TimeAgo date={signal.created_at} />
-          </div>
-          <div className="flex justify-between text-2xs mt-1">
-            <span className="text-surface-500">Quelle</span>
-            <span className="text-surface-400">{signal.source || 'System'}</span>
+
+          <div className="mt-3 space-y-1.5 border-t border-white/5 pt-3 text-2xs">
+            <MetaRow label="Erstellt" value={<TimeAgo date={signal.created_at} />} />
+            <MetaRow label="Quelle" value={<span className="text-surface-400">{signal.source || 'System'}</span>} />
           </div>
         </RailSection>
 
         {actions.length > 0 && (
-          <div className="pt-2 border-t border-surface-700/20">
-            <p className="section-label mb-2 px-1">Schnellaktionen</p>
-            <div className="space-y-0.5">
-              {actions.map((action, i) => (
-                <QuickAction key={i} icon={action.icon} label={action.label} onClick={action.onClick} />
+          <RailSection title="Schnellaktionen" subtitle="Kontextsensitiv gewichtet">
+            <div className="space-y-1.5">
+              {actions.map((action, index) => (
+                <QuickAction
+                  key={`${action.label}-${index}`}
+                  icon={action.icon}
+                  label={action.label}
+                  onClick={action.onClick}
+                  variant={action.variant}
+                />
               ))}
             </div>
-          </div>
+          </RailSection>
         )}
       </div>
     </div>
   );
 }
 
-function RailSection({ title, children }: { title: string; children: React.ReactNode }) {
+function RailSection({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="pb-3 border-b border-surface-700/20 last:border-0">
-      <p className="section-label mb-2">{title}</p>
+    <section className="rounded-2xl border border-white/5 bg-surface-900/55 p-3 shadow-[0_14px_26px_rgba(0,0,0,0.14)]">
+      <div className="mb-3">
+        <p className="section-label mb-1">{title}</p>
+        {subtitle && <p className="text-2xs leading-relaxed text-surface-500">{subtitle}</p>}
+      </div>
       {children}
-    </div>
+    </section>
   );
 }
 
-function RailLink({ icon: Icon, label, value, onClick }: { icon: React.ElementType; label: string; value: string; onClick: () => void }) {
+function RailLink({
+  icon: Icon,
+  label,
+  value,
+  onClick,
+}: {
+  icon: ElementType;
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
-      className="flex items-start gap-2 w-full text-left group hover:bg-surface-800/40 px-1.5 py-1 rounded transition-colors -mx-1.5"
+      className="group flex w-full items-start gap-2 rounded-xl border border-white/5 bg-surface-900/60 px-2.5 py-2 text-left transition-all duration-200 hover:border-white/10 hover:bg-surface-850/80"
     >
-      <Icon size={11} className="text-surface-500 mt-0.5 flex-shrink-0" />
+      <Icon size={11} className="mt-0.5 flex-shrink-0 text-surface-500" />
       <div className="min-w-0 flex-1">
         <p className="text-2xs text-surface-500">{label}</p>
-        <p className="text-xs text-surface-300 truncate group-hover:text-gold-400 transition-colors">{value}</p>
+        <p className="truncate text-xs text-surface-300 transition-colors group-hover:text-gold-300">{value}</p>
       </div>
-      <ArrowUpRight size={10} className="text-surface-600 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+      <ArrowUpRight size={10} className="mt-0.5 flex-shrink-0 text-surface-600 opacity-0 transition-opacity group-hover:opacity-100" />
     </button>
   );
 }
 
 function DocLink({ label }: { label: string }) {
   return (
-    <button className="flex items-center gap-1.5 text-2xs text-surface-400 hover:text-gold-400 transition-colors w-full">
-      <LinkIcon size={10} className="text-surface-500 flex-shrink-0" />
+    <button className="flex w-full items-center gap-1.5 rounded-lg border border-white/5 bg-surface-900/40 px-2 py-1.5 text-left text-2xs text-surface-400 transition-colors hover:border-white/10 hover:bg-surface-850/60 hover:text-gold-300">
+      <LinkIcon size={10} className="flex-shrink-0 text-surface-500" />
       <span className="truncate">{label}</span>
     </button>
   );
 }
 
-function QuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) {
+function MetaRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-surface-500">{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+function RailDetail({
+  label,
+  value,
+  danger = false,
+}: {
+  label: string;
+  value: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className={`rounded-lg border px-3 py-2 ${danger ? 'border-danger-500/15 bg-danger-500/5' : 'border-white/5 bg-surface-900/60'}`}>
+      <span className={`mb-0.5 block text-2xs uppercase tracking-[0.16em] ${danger ? 'text-danger-300' : 'text-surface-500'}`}>
+        {label}
+      </span>
+      <p className={`text-xs leading-relaxed ${danger ? 'text-danger-300' : 'text-surface-300'}`}>{value}</p>
+    </div>
+  );
+}
+
+function QuickAction({
+  icon: Icon,
+  label,
+  onClick,
+  variant = 'secondary',
+}: {
+  icon: ElementType;
+  label: string;
+  onClick?: () => void;
+  variant?: 'primary' | 'secondary' | 'ghost';
+}) {
+  const classes =
+    variant === 'primary'
+      ? 'border-gold-500/20 bg-gold-500/10 text-gold-200 hover:border-gold-500/25 hover:bg-gold-500/15'
+      : variant === 'secondary'
+        ? 'border-white/5 bg-surface-900/70 text-surface-300 hover:border-white/10 hover:bg-surface-850/80 hover:text-surface-100'
+        : 'border-white/5 bg-transparent text-surface-500 hover:border-white/10 hover:bg-surface-900/70 hover:text-surface-200';
+
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 w-full text-xs text-surface-400 hover:text-surface-200 hover:bg-surface-800/50 px-2 py-1.5 rounded transition-colors"
+      className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-all duration-200 ${classes}`}
     >
       <Icon size={12} className="flex-shrink-0" />
-      {label}
+      <span>{label}</span>
     </button>
   );
 }
 
 interface ActionItem {
-  icon: React.ElementType;
+  icon: ElementType;
   label: string;
   onClick?: () => void;
+  variant?: 'primary' | 'secondary' | 'ghost';
 }
 
 function getContextualActions(
@@ -226,48 +297,48 @@ function getContextualActions(
   const actions: ActionItem[] = [];
 
   if (signal.type === 'approval') {
-    actions.push({ icon: CheckCircle2, label: 'Freigeben' });
-    actions.push({ icon: XCircle, label: 'Änderungen anfordern' });
+    actions.push({ icon: CheckCircle2, label: 'Freigeben', variant: 'primary' });
+    actions.push({ icon: XCircle, label: 'Änderungen anfordern', variant: 'secondary' });
   }
 
   if (signal.type === 'agent_question') {
-    actions.push({ icon: MessageSquare, label: 'Antworten', onClick: () => quest && navigate(`/quests/${quest.id}`) });
+    actions.push({ icon: MessageSquare, label: 'Antworten', onClick: () => quest && navigate(`/quests/${quest.id}`), variant: 'primary' });
   }
 
   if (signal.type === 'failed_execution') {
-    actions.push({ icon: RotateCcw, label: 'Erneut ausführen' });
-    actions.push({ icon: Crosshair, label: 'Debug-Quest erstellen' });
+    actions.push({ icon: RotateCcw, label: 'Erneut ausführen', variant: 'primary' });
+    actions.push({ icon: Crosshair, label: 'Debug-Quest erstellen', variant: 'secondary' });
   }
 
   if (signal.type === 'blocker') {
-    actions.push({ icon: CheckCircle2, label: 'Blocker auflösen' });
+    actions.push({ icon: CheckCircle2, label: 'Blocker auflösen', variant: 'primary' });
   }
 
   if (quest) {
-    actions.push({ icon: ArrowRight, label: 'Zur Quest', onClick: () => navigate(`/quests/${quest.id}`) });
+    actions.push({ icon: ArrowRight, label: 'Zur Quest', onClick: () => navigate(`/quests/${quest.id}`), variant: 'secondary' });
   }
 
   if (workflow) {
-    actions.push({ icon: Workflow, label: 'Zum Workflow', onClick: () => navigate('/systems') });
+    actions.push({ icon: Workflow, label: 'Zum Workflow', onClick: () => navigate('/systems'), variant: 'secondary' });
   }
 
   if (session) {
-    actions.push({ icon: MonitorPlay, label: 'Sitzung öffnen', onClick: () => navigate(`/sessions/${session.id}`) });
+    actions.push({ icon: MonitorPlay, label: 'Sitzung öffnen', onClick: () => navigate(`/sessions/${session.id}`), variant: 'secondary' });
   }
 
   if (campaign) {
-    actions.push({ icon: Megaphone, label: 'Kampagne ansehen', onClick: () => navigate('/campaigns') });
+    actions.push({ icon: Megaphone, label: 'Kampagne ansehen', onClick: () => navigate('/campaigns'), variant: 'secondary' });
   }
 
   if (['proposed_quest', 'failed_execution', 'stuck_session', 'campaign_underperformance'].includes(signal.type)) {
-    actions.push({ icon: Plus, label: 'Quest erstellen', onClick: () => navigate('/quests') });
+    actions.push({ icon: Plus, label: 'Quest erstellen', onClick: () => navigate('/quests'), variant: signal.type === 'proposed_quest' ? 'primary' : 'secondary' });
   }
 
   if (signal.type !== 'proposed_quest') {
-    actions.push({ icon: FileText, label: 'Artefakte ansehen' });
+    actions.push({ icon: FileText, label: 'Artefakte ansehen', variant: 'ghost' });
   }
 
-  actions.push({ icon: Archive, label: 'Archivieren' });
+  actions.push({ icon: Archive, label: 'Archivieren', variant: 'ghost' });
 
   return actions;
 }
