@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { mockAgents } from '../../data/mock';
+import { useAgents } from '../../lib/useAgents';
 import type { Priority } from '../../types';
 
 interface NewQuestModalProps {
@@ -13,6 +13,7 @@ export default function NewQuestModal({ onClose }: NewQuestModalProps) {
   const [scope, setScope] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [agentId, setAgentId] = useState('');
+  const { agents } = useAgents();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +87,7 @@ export default function NewQuestModal({ onClose }: NewQuestModalProps) {
                 onChange={e => setAgentId(e.target.value)}
               >
                 <option value="">Nicht zugewiesen</option>
-                {mockAgents.filter(a => a.status !== 'offline').map(agent => (
+                {agents.filter(a => a.status !== 'offline').map(agent => (
                   <option key={agent.id} value={agent.id}>{agent.name}</option>
                 ))}
               </select>
