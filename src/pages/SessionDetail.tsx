@@ -4,6 +4,9 @@ import { getSessionById, getAgentById, getQuestById } from '../data/mock';
 import StatusBadge from '../components/shared/StatusBadge';
 import AgentChip from '../components/shared/AgentChip';
 import TimeAgo from '../components/shared/TimeAgo';
+import DecisionTracePanel from '../components/shared/DecisionTracePanel';
+import AgentResponsibilityCard from '../components/shared/AgentResponsibilityCard';
+import { pickDecisionTrace } from '../lib/decisionTrace';
 
 export default function SessionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +23,9 @@ export default function SessionDetail() {
 
   const agent = getAgentById(session.agent_id);
   const quest = session.linked_quest_id ? getQuestById(session.linked_quest_id) : null;
+  const trace = pickDecisionTrace(session.decision_trace, quest?.decision_trace);
+  const responsibleAgent = getAgentById(session.responsible_agent_id ?? quest?.responsible_agent_id ?? session.agent_id);
+  const lastActorAgent = getAgentById(session.last_actor_agent_id ?? quest?.last_actor_agent_id ?? trace?.actor_agent_id ?? null);
   const runtime = getRuntime(session.started_at);
 
   return (
@@ -121,6 +127,15 @@ export default function SessionDetail() {
         <div className="w-72 border-l border-white/[0.06] bg-surface-900/40 overflow-y-auto flex-shrink-0 px-4 py-4">
           <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3">Kontext</h3>
 
+          <div className="mb-4 pb-4 border-b border-white/[0.04]">
+            <AgentResponsibilityCard
+              responsibleAgent={responsibleAgent}
+              lastActorAgent={lastActorAgent}
+              actorChannel={trace?.actor_channel ?? null}
+              platformAdapter={trace?.platform_adapter ?? null}
+            />
+          </div>
+
           {agent && (
             <div className="mb-4 pb-4 border-b border-white/[0.04]">
               <p className="text-2xs text-surface-500 mb-1">Agent</p>
@@ -151,17 +166,7 @@ export default function SessionDetail() {
           </div>
 
           <div className="mb-4 pb-4 border-b border-white/[0.04]">
-            <p className="text-2xs text-surface-500 mb-1.5">Entscheidungsgrundlage</p>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-2xs">
-                <span className="text-surface-500">Regelwerk</span>
-                <span className="font-mono text-surface-400">Canonical Core v1</span>
-              </div>
-              <div className="flex items-center justify-between text-2xs">
-                <span className="text-surface-500">Quellsystem</span>
-                <span className="font-mono text-surface-400">OpenCode</span>
-              </div>
-            </div>
+            <DecisionTracePanel trace={trace} compact />
           </div>
 
           <div>

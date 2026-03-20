@@ -1,6 +1,10 @@
+﻿import type { ElementType, ReactNode } from 'react';
 import { FileText, Link as LinkIcon, BookOpen, Brain, Workflow, Megaphone, ExternalLink, Shield } from 'lucide-react';
 import type { Quest } from '../../types';
-import { getWorkflowById, getCampaignById } from '../../data/mock';
+import { getWorkflowById, getCampaignById, getAgentById } from '../../data/mock';
+import DecisionTracePanel from '../shared/DecisionTracePanel';
+import AgentResponsibilityCard from '../shared/AgentResponsibilityCard';
+import { pickDecisionTrace } from '../../lib/decisionTrace';
 
 interface QuestContextProps {
   quest: Quest;
@@ -9,6 +13,9 @@ interface QuestContextProps {
 export default function QuestContext({ quest }: QuestContextProps) {
   const workflow = getWorkflowById(quest.linked_workflow_id);
   const campaign = getCampaignById(quest.linked_campaign_id);
+  const trace = pickDecisionTrace(quest.decision_trace);
+  const responsibleAgent = getAgentById(quest.responsible_agent_id ?? quest.agent_id);
+  const lastActorAgent = getAgentById(quest.last_actor_agent_id ?? trace?.actor_agent_id ?? null);
 
   return (
     <div className="h-full overflow-y-auto px-6 py-4 space-y-4">
@@ -18,11 +25,24 @@ export default function QuestContext({ quest }: QuestContextProps) {
         </ContextSection>
       )}
 
-      <ContextSection title="Verknüpfte Notion-Dokumente" icon={LinkIcon}>
+      <ContextSection title="Entscheidungsgrundlage" icon={Shield}>
+        <DecisionTracePanel trace={trace} />
+      </ContextSection>
+
+      <ContextSection title="Agentenverantwortung" icon={Brain}>
+        <AgentResponsibilityCard
+          responsibleAgent={responsibleAgent}
+          lastActorAgent={lastActorAgent}
+          actorChannel={trace?.actor_channel ?? null}
+          platformAdapter={trace?.platform_adapter ?? null}
+        />
+      </ContextSection>
+
+      <ContextSection title="Verknüpfte Dokumente" icon={LinkIcon}>
         <div className="space-y-2">
-          <DocItem title="Outreach Playbook DACH" type="Playbook" />
-          <DocItem title="Kampagnen-Strategie Q1 2025" type="Strategie" />
-          <DocItem title="Agent Onboarding Guide" type="Onboarding" />
+          <DocItem title={trace?.playbook_name ?? 'Playbook noch nicht verfügbar'} type={trace?.playbook_id ?? 'Playbook'} />
+          <DocItem title={trace?.rule_name ?? 'Regel noch nicht verfügbar'} type={trace?.rule_id ?? 'Regel'} />
+          <DocItem title={trace?.source_of_truth_label ?? 'Source of Truth noch nicht verfügbar'} type={trace?.source_of_truth_type ?? 'SoT'} />
         </div>
       </ContextSection>
 
@@ -58,23 +78,6 @@ export default function QuestContext({ quest }: QuestContextProps) {
         </ContextSection>
       )}
 
-      <ContextSection title="Entscheidungsgrundlage" icon={Shield}>
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs bg-surface-900/50 px-3 py-2 rounded">
-            <span className="text-surface-500">Regelwerk</span>
-            <span className="font-mono text-surface-400">Canonical Core v1</span>
-          </div>
-          <div className="flex items-center justify-between text-xs bg-surface-900/50 px-3 py-2 rounded">
-            <span className="text-surface-500">Playbook</span>
-            <span className="font-mono text-surface-400">Outreach Ops</span>
-          </div>
-          <div className="flex items-center justify-between text-xs bg-surface-900/50 px-3 py-2 rounded">
-            <span className="text-surface-500">Adapter</span>
-            <span className="font-mono text-surface-400">Mission Control</span>
-          </div>
-        </div>
-      </ContextSection>
-
       <ContextSection title="Referenzen" icon={BookOpen}>
         <div className="space-y-2">
           <DocItem title="E-Mail-Best-Practices" type="Referenz" />
@@ -102,7 +105,7 @@ export default function QuestContext({ quest }: QuestContextProps) {
   );
 }
 
-function ContextSection({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
+function ContextSection({ title, icon: Icon, children }: { title: string; icon: ElementType; children: ReactNode }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">

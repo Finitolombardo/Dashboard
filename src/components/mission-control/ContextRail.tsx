@@ -1,10 +1,18 @@
-import type { ReactNode, ElementType } from 'react';
+﻿import type { ReactNode, ElementType } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Signal } from '../../types';
-import { getQuestById, getAgentById, getWorkflowById, getCampaignById, getSessionById } from '../../data/mock';
-import AgentChip from '../shared/AgentChip';
-import StatusBadge from '../shared/StatusBadge';
+import {
+  getQuestById,
+  getAgentById,
+  getWorkflowById,
+  getCampaignById,
+  getSessionById,
+  getQuestProposalById,
+} from '../../data/mock';
 import TimeAgo from '../shared/TimeAgo';
+import DecisionTracePanel from '../shared/DecisionTracePanel';
+import AgentResponsibilityCard from '../shared/AgentResponsibilityCard';
+import { pickDecisionTrace } from '../../lib/decisionTrace';
 import {
   Plus,
   MonitorPlay,
@@ -26,7 +34,6 @@ interface ContextRailProps {
   signal: Signal | null;
 }
 
-
 export default function ContextRail({ signal }: ContextRailProps) {
   const navigate = useNavigate();
 
@@ -47,10 +54,19 @@ export default function ContextRail({ signal }: ContextRailProps) {
   }
 
   const quest = signal.linked_quest_id ? getQuestById(signal.linked_quest_id) : undefined;
-  const agent = quest?.agent_id ? getAgentById(quest.agent_id) : undefined;
   const workflow = signal.linked_workflow_id ? getWorkflowById(signal.linked_workflow_id) : undefined;
   const campaign = signal.linked_campaign_id ? getCampaignById(signal.linked_campaign_id) : undefined;
   const session = signal.linked_session_id ? getSessionById(signal.linked_session_id) : undefined;
+
+  const trace = pickDecisionTrace(signal.decision_trace, quest?.decision_trace, session?.decision_trace);
+  const proposal = signal.quest_proposal ?? getQuestProposalById(signal.quest_proposal_id ?? null);
+
+  const responsibleAgent = getAgentById(
+    signal.responsible_agent_id ?? quest?.responsible_agent_id ?? quest?.agent_id ?? session?.responsible_agent_id ?? session?.agent_id ?? null,
+  );
+  const lastActorAgent = getAgentById(
+    signal.last_actor_agent_id ?? quest?.last_actor_agent_id ?? session?.last_actor_agent_id ?? trace?.actor_agent_id ?? null,
+  );
 
   const actions = getContextualActions(signal, quest, workflow, campaign, session, navigate);
 
@@ -65,21 +81,14 @@ export default function ContextRail({ signal }: ContextRailProps) {
       </div>
 
       <div className="flex-1 space-y-4 px-4 py-4">
-        {agent && (
-          <RailSection title="Zuständig" subtitle="Welcher Agent trägt die operative Verantwortung?">
-            <div className="space-y-2">
-              <AgentChip agent={agent} size="md" />
-              <div className="flex items-center gap-1.5 text-2xs text-surface-500">
-                <span className="truncate">{agent.role}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-2xs text-surface-500">
-                <span className="font-mono text-surface-400">{agent.current_model}</span>
-                <span className="text-surface-600">|</span>
-                <StatusBadge status={agent.status} />
-              </div>
-            </div>
-          </RailSection>
-        )}
+        <RailSection title="Zuständig" subtitle="Wer trägt Verantwortung und wer hat zuletzt gehandelt?">
+          <AgentResponsibilityCard
+            responsibleAgent={responsibleAgent}
+            lastActorAgent={lastActorAgent}
+            actorChannel={trace?.actor_channel ?? null}
+            platformAdapter={trace?.platform_adapter ?? null}
+          />
+        </RailSection>
 
         {(quest || workflow || campaign || session) && (
           <RailSection title="Operativer Bezug" subtitle="Direkte Verknüpfungen zum Signal">
@@ -123,23 +132,22 @@ export default function ContextRail({ signal }: ContextRailProps) {
         {quest && (quest.current_step || quest.next_step || quest.blocker) && (
           <RailSection title="Quest-Status" subtitle="Was läuft gerade, was kommt als Nächstes?">
             <div className="space-y-2">
-              {quest.current_step && (
-                <RailDetail label="Aktueller Schritt" value={quest.current_step} />
-              )}
+              {quest.current_step && <RailDetail label="Aktueller Schritt" value={quest.current_step} />}
               {quest.next_step && <RailDetail label="Nächster Schritt" value={quest.next_step} />}
-              {quest.blocker && (
-                <RailDetail label="Blocker" value={quest.blocker} danger />
-              )}
+              {quest.blocker && <RailDetail label="Blocker" value={quest.blocker} danger />}
             </div>
           </RailSection>
         )}
 
-        <RailSection title="Entscheidungsgrundlage" subtitle="Regelwerk und Quellsystem">
-          <div className="space-y-1.5">
-            <TraceRow label="Regelwerk" value="Canonical Core v1" />
-            <TraceRow label="Playbook" value="Outreach Ops" />
-            <TraceRow label="Quellsystem" value={signal.source || 'System'} />
-          </div>
+        <RailSection title="Entscheidungsgrundlage" subtitle="Regelwerk, Playbook, Source of Truth und Adapter">
+          <DecisionTracePanel trace={trace} compact />
+          {proposal && (
+            <div className="mt-2 rounded-lg border border-white/5 bg-surface-900/50 px-3 py-2 text-2xs">
+              <p className="text-surface-500">Quest-Vorschlag</p>
+              <p className="mt-0.5 text-surface-300">{proposal.proposed_title}</p>
+              <p className="text-surface-500">Status: {proposal.status}</p>
+            </div>
+          )}
         </RailSection>
 
         <RailSection title="Kontext" subtitle="Verweise und Meta-Informationen zum Signal">
@@ -254,15 +262,6 @@ function RailDetail({
         {label}
       </span>
       <p className={`text-xs leading-relaxed ${danger ? 'text-danger-300' : 'text-surface-300'}`}>{value}</p>
-    </div>
-  );
-}
-
-function TraceRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-surface-900/50 px-2.5 py-1.5">
-      <span className="text-2xs text-surface-500">{label}</span>
-      <span className="text-2xs font-mono text-surface-300 truncate">{value}</span>
     </div>
   );
 }

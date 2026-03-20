@@ -1,4 +1,124 @@
-import type { Agent, Quest, Signal, Workflow, Execution, Session, Campaign, Message, Artefact, Event, Service } from '../types';
+import type {
+  Agent,
+  Quest,
+  Signal,
+  Workflow,
+  Execution,
+  Session,
+  Campaign,
+  Message,
+  Artefact,
+  Event,
+  Service,
+  DecisionTrace,
+  QuestProposal,
+} from '../types';
+
+export const mockDecisionTraces: DecisionTrace[] = [
+  {
+    trace_id: 'dt-s1-credential-block',
+    actor_agent_id: 'a6',
+    actor_agent_role: 'waechter',
+    actor_channel: 'system_monitor',
+    decision_reason: 'Abgelaufener Schlüssel hat eine Guardrail-Sperre für die Ausführung ausgelöst.',
+    rule_id: 'sync-drift-credential-expiry',
+    rule_name: 'SYNC_AND_DRIFT_RULES',
+    playbook_id: 'pb-credential-rotation',
+    playbook_name: 'Credential Rotation',
+    source_of_truth_type: 'runtime_state',
+    source_of_truth_label: 'Scoring Runtime',
+    canonical_core_section: 'SYNC_AND_DRIFT_RULES',
+    handover_template_used: 'handover.blocker.v1',
+    memory_scope: 'quest+signal',
+    platform_adapter: 'mission_control_adapter',
+    runtime_source: 'target_runtime',
+    trace_summary: 'Blocker wurde regelbasiert erkannt und als Review-Fall markiert.',
+    confidence: 0.93,
+    review_required: true,
+    guardrail_status: 'blocked',
+    drift_risk: 'high',
+    last_updated_at: '2025-03-20T08:45:00Z',
+  },
+  {
+    trace_id: 'dt-s3-operator-decision',
+    actor_agent_id: 'a1',
+    actor_agent_role: 'archon',
+    actor_channel: 'operator_console',
+    decision_reason: 'Segmentwahl muss durch den Operator entschieden werden, kein automatischer Pfad.',
+    rule_id: 'communication-boundary-human-decision',
+    rule_name: 'COMMUNICATION_AND_CONTEXT_BOUNDARIES',
+    playbook_id: 'pb-segmentation-briefing',
+    playbook_name: 'Segmentation Briefing',
+    source_of_truth_type: 'operator_instruction',
+    source_of_truth_label: 'Operator Briefing',
+    canonical_core_section: 'COMMUNICATION_AND_CONTEXT_BOUNDARIES',
+    handover_template_used: 'handover.question.v1',
+    memory_scope: 'session+quest',
+    platform_adapter: 'manual_operator_channel',
+    runtime_source: 'mission_control_runtime',
+    trace_summary: 'Entscheidung wurde explizit an den Operator delegiert.',
+    confidence: 0.86,
+    review_required: false,
+    guardrail_status: 'ok',
+    drift_risk: 'medium',
+    last_updated_at: '2025-03-20T07:00:00Z',
+  },
+  {
+    trace_id: 'dt-ss2-controlled-apply',
+    actor_agent_id: 'a2',
+    actor_agent_role: 'codex',
+    actor_channel: 'opencode_workspace',
+    decision_reason: 'Implementierung über kontrollierten Executor-Kanal vorbereitet.',
+    rule_id: 'handover-controlled-apply',
+    rule_name: 'HANDOVER_TEMPLATE',
+    playbook_id: 'pb-dashboard-change-safe-apply',
+    playbook_name: 'Safe Apply Workflow',
+    source_of_truth_type: 'workspace_state',
+    source_of_truth_label: 'OpenCode Workspace',
+    canonical_core_section: 'HANDOVER_TEMPLATE',
+    handover_template_used: 'handover.executor.v1',
+    memory_scope: 'session+quest+workspace',
+    platform_adapter: 'opencode_adapter',
+    runtime_source: 'opencode_runtime',
+    trace_summary: 'Änderungspfad läuft über Workspace und nicht über Blind-Sync.',
+    confidence: 0.9,
+    review_required: true,
+    guardrail_status: 'review_required',
+    drift_risk: 'low',
+    last_updated_at: '2025-03-20T08:20:00Z',
+  },
+];
+
+export const mockQuestProposals: QuestProposal[] = [
+  {
+    proposal_id: 'qp-s7-angle-rotation',
+    origin_type: 'signal',
+    origin_ref: 's7',
+    proposed_by_agent_id: 'a1',
+    proposed_for_agent_id: 'a2',
+    proposed_title: 'Angle-Rotation für DACH-Kampagne',
+    proposed_goal: 'Reply-Rate der Kampagne durch neue Angle-Varianten erhöhen.',
+    reason: 'Signal zeigt Muster mit sinkender Antwortqualität in bestehender Sequenz.',
+    linked_rule_id: 'communication-boundary-human-decision',
+    linked_playbook_id: 'pb-segmentation-briefing',
+    linked_trace_id: 'dt-s3-operator-decision',
+    status: 'proposed',
+  },
+  {
+    proposal_id: 'qp-s1-debug-workflow',
+    origin_type: 'system',
+    origin_ref: 's1',
+    proposed_by_agent_id: 'a6',
+    proposed_for_agent_id: 'a2',
+    proposed_title: 'Debug-Quest für Credential-Rotation',
+    proposed_goal: 'Credential-Rotation standardisiert ausführen und Drift-Risiko senken.',
+    reason: 'Guardrail-Blocker wurde über Runtime-State ausgelöst.',
+    linked_rule_id: 'sync-drift-credential-expiry',
+    linked_playbook_id: 'pb-credential-rotation',
+    linked_trace_id: 'dt-s1-credential-block',
+    status: 'draft',
+  },
+];
 
 export const mockAgents: Agent[] = [
   {
@@ -105,6 +225,11 @@ export const mockQuests: Quest[] = [
     notes: 'Scoring-Service-Team kontaktiert',
     created_at: '2025-03-18T14:00:00Z',
     updated_at: '2025-03-20T09:00:00Z',
+    decision_trace_id: 'dt-s1-credential-block',
+    decision_trace: mockDecisionTraces[0],
+    trace_summary: 'Quest ist durch Guardrail blockiert, bis Runtime-Abhängigkeit gelöst ist.',
+    responsible_agent_id: 'a2',
+    last_actor_agent_id: 'a6',
   },
   {
     id: 'q3',
@@ -230,6 +355,12 @@ export const mockSignals: Signal[] = [
     linked_session_id: null,
     linked_campaign_id: null,
     created_at: '2025-03-20T08:45:00Z',
+    decision_trace_id: 'dt-s1-credential-block',
+    decision_trace: mockDecisionTraces[0],
+    quest_proposal_id: 'qp-s1-debug-workflow',
+    quest_proposal: mockQuestProposals[1],
+    responsible_agent_id: 'a2',
+    last_actor_agent_id: 'a6',
   },
   {
     id: 's2',
@@ -258,6 +389,10 @@ export const mockSignals: Signal[] = [
     linked_session_id: 'ss1',
     linked_campaign_id: 'c3',
     created_at: '2025-03-20T07:00:00Z',
+    decision_trace_id: 'dt-s3-operator-decision',
+    decision_trace: mockDecisionTraces[1],
+    responsible_agent_id: 'a1',
+    last_actor_agent_id: 'a1',
   },
   {
     id: 's4',
@@ -314,6 +449,12 @@ export const mockSignals: Signal[] = [
     linked_session_id: null,
     linked_campaign_id: 'c1',
     created_at: '2025-03-20T08:00:00Z',
+    decision_trace_id: 'dt-s3-operator-decision',
+    decision_trace: mockDecisionTraces[1],
+    quest_proposal_id: 'qp-s7-angle-rotation',
+    quest_proposal: mockQuestProposals[0],
+    responsible_agent_id: 'a1',
+    last_actor_agent_id: 'a1',
   },
   {
     id: 's8',
@@ -473,6 +614,10 @@ export const mockSessions: Session[] = [
     started_at: '2025-03-20T07:30:00Z',
     last_message: 'Slack-Webhook konfiguriert, beginne mit Template-Erstellung',
     created_at: '2025-03-20T07:30:00Z',
+    decision_trace_id: 'dt-ss2-controlled-apply',
+    decision_trace: mockDecisionTraces[2],
+    responsible_agent_id: 'a2',
+    last_actor_agent_id: 'a2',
   },
   {
     id: 'ss3',
@@ -793,4 +938,14 @@ export function getQuestsForAgent(agentId: string): Quest[] {
 
 export function getExecutionsForWorkflow(workflowId: string): Execution[] {
   return mockExecutions.filter(e => e.workflow_id === workflowId);
+}
+
+export function getDecisionTraceById(traceId: string | null): DecisionTrace | undefined {
+  if (!traceId) return undefined;
+  return mockDecisionTraces.find((trace) => trace.trace_id === traceId);
+}
+
+export function getQuestProposalById(proposalId: string | null): QuestProposal | undefined {
+  if (!proposalId) return undefined;
+  return mockQuestProposals.find((proposal) => proposal.proposal_id === proposalId);
 }

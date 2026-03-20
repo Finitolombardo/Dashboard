@@ -1,3 +1,20 @@
+import type { DecisionTrace, QuestProposal, ActorAgentRole } from './decisionTrace';
+
+export type {
+  ActorAgentRole,
+  ActorChannel,
+  SourceOfTruthType,
+  CanonicalCoreSection,
+  PlatformAdapter,
+  RuntimeSource,
+  GuardrailStatus,
+  DriftRisk,
+  DecisionTrace,
+  QuestProposalStatus,
+  QuestProposalOriginType,
+  QuestProposal,
+} from './decisionTrace';
+
 export type QuestStatus =
   | 'draft'
   | 'ready'
@@ -48,6 +65,7 @@ export interface Agent {
   id: string;
   name: string;
   role: string;
+  canonical_role?: ActorAgentRole;
   status: AgentStatus;
   capabilities: string;
   current_model: string;
@@ -73,6 +91,11 @@ export interface Quest {
   notes: string;
   created_at: string;
   updated_at: string;
+  decision_trace_id?: string | null;
+  decision_trace?: DecisionTrace;
+  trace_summary?: string;
+  responsible_agent_id?: string | null;
+  last_actor_agent_id?: string | null;
   agent?: Agent;
 }
 
@@ -89,6 +112,12 @@ export interface Signal {
   linked_session_id: string | null;
   linked_campaign_id: string | null;
   created_at: string;
+  decision_trace_id?: string | null;
+  decision_trace?: DecisionTrace;
+  quest_proposal_id?: string | null;
+  quest_proposal?: QuestProposal;
+  responsible_agent_id?: string | null;
+  last_actor_agent_id?: string | null;
 }
 
 export interface Workflow {
@@ -129,6 +158,10 @@ export interface Session {
   started_at: string;
   last_message: string;
   created_at: string;
+  decision_trace_id?: string | null;
+  decision_trace?: DecisionTrace;
+  responsible_agent_id?: string | null;
+  last_actor_agent_id?: string | null;
   agent?: Agent;
 }
 
