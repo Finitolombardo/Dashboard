@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface-950 font-sans;
+    color: #c8cacf;
+  }
+
+  ::selection {
+    background: rgba(217, 168, 58, 0.18);
+    color: #f2f2f4;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-700/60 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-surface-600/60;
+  }
+}
+
+@layer components {
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800/70 transition-all duration-150;
+  }
+
+  .sidebar-link.active {
+    @apply text-gold-400 bg-gold-400/[0.07];
+  }
+
+  .card {
+    @apply bg-surface-850/80 border border-surface-700/40 rounded-lg;
+  }
+
+  .card-hover {
+    @apply card hover:border-surface-600/40 hover:bg-surface-800/80 transition-all duration-150 cursor-pointer;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-3.5 py-1.5 bg-gold-500/90 hover:bg-gold-400/90 text-surface-950 text-xs font-semibold rounded transition-all duration-150;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-3.5 py-1.5 bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium rounded border border-surface-600/40 transition-all duration-150;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 text-surface-400 hover:text-surface-200 hover:bg-surface-800/70 text-xs font-medium rounded transition-all duration-150;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center gap-2 px-3.5 py-1.5 bg-danger-500/10 hover:bg-danger-500/20 text-danger-400 text-xs font-medium rounded border border-danger-500/20 transition-all duration-150;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 bg-surface-900 border border-surface-700/40 rounded text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-gold-500/40 focus:ring-1 focus:ring-gold-500/20 transition-colors duration-150;
+  }
+
+  .label {
+    @apply block text-xs font-medium text-surface-400 mb-1.5;
+  }
+
+  .section-label {
+    @apply text-2xs font-semibold text-surface-500 uppercase tracking-widest;
+  }
+}
