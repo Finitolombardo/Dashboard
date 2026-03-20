@@ -1,22 +1,59 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader } from 'lucide-react';
 import { useAgents } from '../../lib/useAgents';
+import { supabase } from '../../lib/supabase';
 import type { Priority } from '../../types';
+
+const configured = !!(
+  import.meta.env.VITE_SUPABASE_URL &&
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 interface NewQuestModalProps {
   onClose: () => void;
+  onCreated?: () => void;
 }
 
-export default function NewQuestModal({ onClose }: NewQuestModalProps) {
+export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps) {
   const [title, setTitle] = useState('');
   const [goal, setGoal] = useState('');
   const [scope, setScope] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [agentId, setAgentId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { agents } = useAgents();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim()) return;
+
+    if (!configured) {
+      onClose();
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    const { error: insertError } = await supabase.from('quests').insert({
+      title: title.trim(),
+      goal: goal.trim(),
+      scope: scope.trim(),
+      priority,
+      agent_id: agentId || null,
+      status: 'draft',
+      progress: 0,
+    });
+
+    setSubmitting(false);
+
+    if (insertError) {
+      setError('Fehler beim Erstellen. Bitte erneut versuchen.');
+      return;
+    }
+
+    onCreated?.();
     onClose();
   };
 
@@ -33,13 +70,14 @@ export default function NewQuestModal({ onClose }: NewQuestModalProps) {
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="label">Titel</label>
+            <label className="label">Titel *</label>
             <input
               type="text"
               className="input"
               placeholder="Quest-Titel eingeben..."
               value={title}
               onChange={e => setTitle(e.target.value)}
+              required
             />
           </div>
 
@@ -94,12 +132,25 @@ export default function NewQuestModal({ onClose }: NewQuestModalProps) {
             </div>
           </div>
 
+          {error && (
+            <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded px-3 py-2">
+              {error}
+            </p>
+          )}
+
           <div className="flex items-center justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="btn-ghost">
+            <button type="button" onClick={onClose} className="btn-ghost" disabled={submitting}>
               Abbrechen
             </button>
-            <button type="submit" className="btn-primary">
-              Quest erstellen
+            <button type="submit" className="btn-primary" disabled={submitting || !title.trim()}>
+              {submitting ? (
+                <>
+                  <Loader size={14} className="animate-spin" />
+                  Wird erstellt…
+                </>
+              ) : (
+                'Quest erstellen'
+              )}
             </button>
           </div>
         </form>

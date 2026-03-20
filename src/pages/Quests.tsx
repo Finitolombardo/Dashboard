@@ -28,7 +28,7 @@ export default function Quests() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [showNewQuest, setShowNewQuest] = useState(false);
-  const { quests, loading } = useQuests();
+  const { quests, loading, refresh } = useQuests();
 
   const filtered = quests.filter(q => {
     if (filter !== 'all' && q.status !== filter) return false;
@@ -132,7 +132,7 @@ export default function Quests() {
         )}
       </div>
 
-      {showNewQuest && <NewQuestModal onClose={() => setShowNewQuest(false)} />}
+      {showNewQuest && <NewQuestModal onClose={() => setShowNewQuest(false)} onCreated={refresh} />}
     </div>
   );
 }

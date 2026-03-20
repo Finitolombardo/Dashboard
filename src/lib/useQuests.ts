@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 import { mockQuests } from '../data/mock';
 import type { Quest } from '../types';
@@ -12,8 +12,9 @@ export function useQuests() {
   const [quests, setQuests] = useState<Quest[]>(configured ? [] : mockQuests);
   const [loading, setLoading] = useState(configured);
 
-  useEffect(() => {
+  const fetch = useCallback(() => {
     if (!configured) return;
+    setLoading(true);
     supabase
       .from('quests')
       .select('*, agent:agents(*)')
@@ -21,6 +22,8 @@ export function useQuests() {
       .then(({ data, error }) => {
         if (!error && data && data.length > 0) {
           setQuests(data as Quest[]);
+        } else if (!error && data) {
+          setQuests([]);
         } else {
           setQuests(mockQuests);
         }
@@ -28,5 +31,7 @@ export function useQuests() {
       });
   }, []);
 
-  return { quests, loading };
+  useEffect(() => { fetch(); }, [fetch]);
+
+  return { quests, loading, refresh: fetch };
 }
