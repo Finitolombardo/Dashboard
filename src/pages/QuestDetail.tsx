@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -11,7 +11,9 @@ import {
   MoreHorizontal,
   AlertTriangle,
 } from 'lucide-react';
-import { getQuestById, getAgentById, getMessagesForQuest, getEventsForQuest, getArtefactsForQuest } from '../data/mock';
+import { getMessagesForQuest, getEventsForQuest, getArtefactsForQuest } from '../data/mock';
+import { supabase } from '../lib/supabase';
+import type { Quest } from '../types';
 import StatusBadge from '../components/shared/StatusBadge';
 import PriorityTag from '../components/shared/PriorityTag';
 import AgentChip from '../components/shared/AgentChip';
@@ -31,8 +33,28 @@ export default function QuestDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('work');
+  const [quest, setQuest] = useState<Quest | null | undefined>(undefined);
 
-  const quest = id ? getQuestById(id) : undefined;
+  useEffect(() => {
+    if (!id) { setQuest(null); return; }
+    supabase
+      .from('quests')
+      .select('*, agent:agents(*)')
+      .eq('id', id)
+      .single()
+      .then(({ data, error }) => {
+        setQuest(error || !data ? null : (data as Quest));
+      });
+  }, [id]);
+
+  if (quest === undefined) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <p className="text-sm text-surface-500">Lädt…</p>
+      </div>
+    );
+  }
+
   if (!quest) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -41,7 +63,7 @@ export default function QuestDetail() {
     );
   }
 
-  const agent = getAgentById(quest.agent_id);
+  const agent = quest.agent ?? undefined;
   const messages = getMessagesForQuest(quest.id);
   const events = getEventsForQuest(quest.id);
   const artefacts = getArtefactsForQuest(quest.id);
