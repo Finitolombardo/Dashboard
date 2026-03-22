@@ -49,23 +49,7 @@ export default function QuestDetail() {
         setQuest(q);
         fetchQuestMessagesFromBackend(id).then(setMessages).catch(() => {});
         fetchQuestArtifactsFromBackend(id)
-          .then(arts => {
-            if (arts.length > 0) {
-              setArtefacts(arts);
-            } else if (q.notes) {
-              // Show last result excerpt as a synthetic artefact
-              setArtefacts([{
-                id: `notes-${q.id}`,
-                quest_id: q.id,
-                title: 'Letzte Ergebnisse',
-                type: 'log' as const,
-                source: 'Agent',
-                created_by: 'Agent',
-                url: '',
-                created_at: q.updated_at,
-              }]);
-            }
-          })
+          .then(setArtefacts)
           .catch(() => {});
       })
       .catch(() => setQuest(null));
@@ -74,10 +58,15 @@ export default function QuestDetail() {
   // Poll messages while quest is active
   useEffect(() => {
     if (!id || !quest) return;
-    const activeStatuses = ['in_progress', 'waiting', 'in_review'];
-    if (!activeStatuses.includes(quest.status)) return;
+    if (quest.status === 'done' || quest.status === 'archived') return;
     const timer = setInterval(() => {
-      fetchQuestMessagesFromBackend(id).then(setMessages).catch(() => {});
+      fetchQuestMessagesFromBackend(id).then(serverMsgs => {
+        setMessages(prev => {
+          const serverIds = new Set(serverMsgs.map(m => m.id));
+          const localOnly = prev.filter(m => m.id.startsWith('local-') && !serverIds.has(m.id));
+          return [...serverMsgs, ...localOnly];
+        });
+      }).catch(() => {});
       fetchQuestDetailFromBackend(id).then(setQuest).catch(() => {});
     }, 5000);
     return () => clearInterval(timer);
@@ -193,9 +182,10 @@ export default function QuestDetail() {
             messages={messages}
             events={events}
             onSend={content => {
+              const localId = `local-${Date.now()}`;
               // Optimistic render
               setMessages(prev => [...prev, {
-                id: `local-${Date.now()}`,
+                id: localId,
                 quest_id: quest.id,
                 sender_type: 'operator' as const,
                 sender_name: 'Operator',
@@ -203,8 +193,17 @@ export default function QuestDetail() {
                 message_type: 'message' as const,
                 created_at: new Date().toISOString(),
               }]);
-              // Send to backend, then dispatch to activate agent
+              // Send to backend, refetch messages to confirm persistence, then dispatch
               sendQuestMessage(quest.id, content)
+                .then(() => fetchQuestMessagesFromBackend(quest.id))
+                .then(serverMsgs => {
+                  // Merge: keep local optimistic messages that aren't on server yet
+                  setMessages(prev => {
+                    const serverIds = new Set(serverMsgs.map(m => m.id));
+                    const localOnly = prev.filter(m => m.id.startsWith('local-') && !serverIds.has(m.id));
+                    return [...serverMsgs, ...localOnly];
+                  });
+                })
                 .then(() => dispatchQuest(quest.id))
                 .then(() => fetchQuestDetailFromBackend(quest.id).then(setQuest))
                 .catch(() => {});

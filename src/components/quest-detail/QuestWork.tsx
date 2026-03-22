@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Bot, User, Cpu, HelpCircle, CheckCircle2, Package, AlertTriangle } from 'lucide-react';
+import { Send, Bot, User, Cpu, HelpCircle, CheckCircle2, Package } from 'lucide-react';
 import type { Quest, Message, Event } from '../../types';
 import TimeAgo from '../shared/TimeAgo';
 
@@ -23,14 +23,6 @@ export default function QuestWork({ quest, messages, events, onSend }: QuestWork
   return (
     <div className="h-full flex">
       <div className="flex-1 flex flex-col min-w-0">
-        {quest.blocker && (
-          <div className="px-6 py-2 border-b border-danger-500/20 bg-danger-500/5 flex items-center gap-1.5 text-xs text-danger-400">
-            <AlertTriangle size={12} className="flex-shrink-0" />
-            <span className="font-medium">Blocker:</span>
-            <span>{quest.blocker}</span>
-          </div>
-        )}
-
         {(quest.current_step || quest.next_step) && (
           <div className="px-6 py-3 border-b border-white/[0.06] bg-surface-900/30">
             <div className="grid grid-cols-2 gap-4">

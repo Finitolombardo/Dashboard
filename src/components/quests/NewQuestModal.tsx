@@ -24,7 +24,7 @@ export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps
     setError(null);
 
     try {
-      await createQuestFromIntake({ title, goal, scope });
+      await createQuestFromIntake({ title, goal, scope, priority });
       onCreated?.();
       onClose();
     } catch {

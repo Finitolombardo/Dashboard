@@ -242,34 +242,41 @@ export async function applyQuestAction(questId: string, action: string, reviewNo
   return mapQuest(raw);
 }
 
-// Two-step quest creation: draft → create-from-draft (matches live server API)
+// Quest creation: build structured draft, send to create-from-draft (matches live server API)
 export async function createQuestFromIntake(opts: {
   title: string;
   goal?: string;
   scope?: string;
+  priority?: string;
 }): Promise<Quest> {
-  const lines = [
-    opts.title.trim(),
-    opts.goal?.trim() ? `Ziel: ${opts.goal.trim()}` : "",
-    opts.scope?.trim() ? `Umfang: ${opts.scope.trim()}` : "",
-  ].filter(Boolean);
+  const title = opts.title.trim();
+  const goal = opts.goal?.trim() || title;
+  const scope = opts.scope?.trim() || "";
+  const priorityMap: Record<string, number> = { critical: 1, high: 2, medium: 3, low: 4 };
+  const priority = priorityMap[opts.priority ?? "medium"] ?? 3;
 
-  // Step 1: Create draft
-  const draftRes = await fetch(`${API_BASE_URL}/api/tasks/draft`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ input: lines.join("\n") }),
-  });
-  if (!draftRes.ok) throw new Error(`POST /api/tasks/draft: ${draftRes.status}`);
-  const draftData = (await draftRes.json()) as Record<string, unknown>;
-  const draft = draftData.draft;
-  if (!draft) throw new Error("Draft response missing draft object");
+  const draft = {
+    id: `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    title,
+    goal,
+    rationale: scope || "Quest aus Mission Control UI erstellt.",
+    priority,
+    assignedAgentId: "archon",
+    assignedRole: "Koordination",
+    nextAction: "Scope prüfen und Quest starten.",
+    subtasks: [],
+    parentQuestId: undefined,
+    relatedQuestIds: [],
+    sourceType: "manual",
+    sourceContextSummary: scope,
+    ambiguityFlags: [],
+    createdAt: new Date().toISOString(),
+  };
 
-  // Step 2: Create quest from draft
   const createRes = await fetch(`${API_BASE_URL}/api/tasks/create-from-draft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ draft, confirmCreate: true }),
+    body: JSON.stringify({ draft, confirmCreate: true, delegateAgentId: "archon" }),
   });
   if (!createRes.ok) throw new Error(`POST /api/tasks/create-from-draft: ${createRes.status}`);
   const createData = (await createRes.json()) as Record<string, unknown>;
