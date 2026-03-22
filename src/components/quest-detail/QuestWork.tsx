@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Bot, User, Cpu, HelpCircle, CheckCircle2, Package } from 'lucide-react';
+import { Send, Bot, User, Cpu, HelpCircle, CheckCircle2, Package, AlertTriangle } from 'lucide-react';
 import type { Quest, Message, Event } from '../../types';
 import TimeAgo from '../shared/TimeAgo';
 
@@ -7,14 +7,30 @@ interface QuestWorkProps {
   quest: Quest;
   messages: Message[];
   events: Event[];
+  onSend?: (content: string) => void;
 }
 
-export default function QuestWork({ quest, messages, events }: QuestWorkProps) {
+export default function QuestWork({ quest, messages, events, onSend }: QuestWorkProps) {
   const [newMessage, setNewMessage] = useState('');
+
+  function handleSend() {
+    const text = newMessage.trim();
+    if (!text) return;
+    setNewMessage('');
+    onSend?.(text);
+  }
 
   return (
     <div className="h-full flex">
       <div className="flex-1 flex flex-col min-w-0">
+        {quest.blocker && (
+          <div className="px-6 py-2 border-b border-danger-500/20 bg-danger-500/5 flex items-center gap-1.5 text-xs text-danger-400">
+            <AlertTriangle size={12} className="flex-shrink-0" />
+            <span className="font-medium">Blocker:</span>
+            <span>{quest.blocker}</span>
+          </div>
+        )}
+
         {(quest.current_step || quest.next_step) && (
           <div className="px-6 py-3 border-b border-white/[0.06] bg-surface-900/30">
             <div className="grid grid-cols-2 gap-4">
@@ -48,11 +64,11 @@ export default function QuestWork({ quest, messages, events }: QuestWorkProps) {
               placeholder="Nachricht an den Agenten..."
               value={newMessage}
               onChange={e => setNewMessage(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && newMessage.trim() && setNewMessage('')}
+              onKeyDown={e => e.key === 'Enter' && handleSend()}
             />
             <button
               className="btn-primary px-3"
-              onClick={() => newMessage.trim() && setNewMessage('')}
+              onClick={handleSend}
             >
               <Send size={14} />
             </button>

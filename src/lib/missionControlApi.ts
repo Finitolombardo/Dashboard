@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "./config";
-import type { Quest, Agent, Priority, QuestStatus, AgentStatus } from "../types";
+import type { Quest, Agent, Priority, QuestStatus, AgentStatus, Message, Artefact, MessageSenderType, ArtefactType } from "../types";
 
 // ─── Status / Priority mappers ─────────────────────────────────────────────
 
@@ -130,19 +130,87 @@ export async function fetchQuestDetailFromBackend(questId: string): Promise<Ques
   return mapQuest(raw);
 }
 
+// ─── Agent lookup ─────────────────────────────────────────────────────────
+
+export function getAgentById(id: string | null | undefined): Agent | undefined {
+  if (!id) return undefined;
+  const a = OPERATIVE_AGENTS.find(x => x.id === id);
+  if (!a) return undefined;
+  const now = new Date().toISOString();
+  return { ...a, status: "idle", workload: 0, created_at: now, updated_at: now };
+}
+
+// ─── Quest status update ──────────────────────────────────────────────────
+
+export async function updateQuestStatus(questId: string, backendStatus: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/tasks/${encodeURIComponent(questId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: backendStatus }),
+  });
+  if (!res.ok) throw new Error(`PATCH /api/tasks/${questId}: ${res.status}`);
+}
+
 // ─── Quest detail sub-resources ───────────────────────────────────────────
 
-export async function fetchQuestMessagesFromBackend(questId: string): Promise<unknown[]> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapMessage(raw: any, questId: string): Message {
+  return {
+    id: raw.id ?? String(Math.random()),
+    quest_id: questId,
+    sender_type: (raw.senderType ?? raw.sender_type ?? "agent") as MessageSenderType,
+    sender_name: raw.senderName ?? raw.sender_name ?? raw.actor ?? "Agent",
+    content: raw.content ?? raw.text ?? raw.message ?? "",
+    message_type: (raw.messageType ?? raw.message_type ?? raw.type ?? "message") as Message["message_type"],
+    created_at: raw.createdAt ?? raw.created_at ?? new Date().toISOString(),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapArtefact(raw: any, questId: string): Artefact {
+  return {
+    id: raw.id ?? String(Math.random()),
+    quest_id: questId,
+    title: raw.title ?? raw.name ?? raw.filename ?? "Artefakt",
+    type: (raw.type ?? "file") as ArtefactType,
+    source: raw.source ?? "",
+    created_by: raw.createdBy ?? raw.created_by ?? raw.actor ?? "Agent",
+    url: raw.url ?? raw.path ?? "",
+    created_at: raw.createdAt ?? raw.created_at ?? new Date().toISOString(),
+  };
+}
+
+export async function fetchQuestMessagesFromBackend(questId: string): Promise<Message[]> {
   const data = (await apiFetch(`/api/tasks/${questId}/messages`)) as Record<string, unknown>;
-  return (data.messages ?? (Array.isArray(data) ? data : [])) as unknown[];
+  const items = data.messages ?? (Array.isArray(data) ? data : []);
+  return (items as object[]).map(raw => mapMessage(raw, questId));
 }
 
-export async function fetchQuestActivityFromBackend(questId: string): Promise<unknown[]> {
-  const data = (await apiFetch(`/api/tasks/${questId}/activity`)) as Record<string, unknown>;
-  return (data.events ?? data.items ?? (Array.isArray(data) ? data : [])) as unknown[];
-}
-
-export async function fetchQuestArtifactsFromBackend(questId: string): Promise<unknown[]> {
+export async function fetchQuestArtifactsFromBackend(questId: string): Promise<Artefact[]> {
   const data = (await apiFetch(`/api/tasks/${questId}/artifacts`)) as Record<string, unknown>;
-  return (data.artifacts ?? (Array.isArray(data) ? data : [])) as unknown[];
+  const items = data.artifacts ?? (Array.isArray(data) ? data : []);
+  return (items as object[]).map(raw => mapArtefact(raw, questId));
+}
+
+export async function sendQuestMessage(questId: string, content: string): Promise<Message> {
+  const res = await fetch(`${API_BASE_URL}/api/tasks/${encodeURIComponent(questId)}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content, senderType: "operator" }),
+  });
+  const now = new Date().toISOString();
+  if (res.ok) {
+    const raw = (await res.json()) as Record<string, unknown>;
+    return mapMessage(raw, questId);
+  }
+  // If endpoint doesn't exist, return the optimistic message as-is
+  return {
+    id: `local-${Date.now()}`,
+    quest_id: questId,
+    sender_type: "operator",
+    sender_name: "Operator",
+    content,
+    message_type: "message",
+    created_at: now,
+  };
 }

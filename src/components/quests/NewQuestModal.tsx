@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { X, Loader } from 'lucide-react';
-import { useAgents } from '../../lib/useAgents';
 import { supabase } from '../../lib/supabase';
 import type { Priority } from '../../types';
 
@@ -19,10 +18,8 @@ export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps
   const [goal, setGoal] = useState('');
   const [scope, setScope] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
-  const [agentId, setAgentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { agents } = useAgents();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +38,7 @@ export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps
       goal: goal.trim(),
       scope: scope.trim(),
       priority,
-      agent_id: agentId || null,
+      agent_id: null,
       status: 'draft',
       progress: 0,
     });
@@ -103,33 +100,18 @@ export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Priorität</label>
-              <select
-                className="input"
-                value={priority}
-                onChange={e => setPriority(e.target.value as Priority)}
-              >
-                <option value="critical">Kritisch</option>
-                <option value="high">Hoch</option>
-                <option value="medium">Mittel</option>
-                <option value="low">Niedrig</option>
-              </select>
-            </div>
-            <div>
-              <label className="label">Agent zuweisen</label>
-              <select
-                className="input"
-                value={agentId}
-                onChange={e => setAgentId(e.target.value)}
-              >
-                <option value="">Nicht zugewiesen</option>
-                {agents.filter(a => a.status !== 'offline').map(agent => (
-                  <option key={agent.id} value={agent.id}>{agent.name}</option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label className="label">Priorität</label>
+            <select
+              className="input"
+              value={priority}
+              onChange={e => setPriority(e.target.value as Priority)}
+            >
+              <option value="critical">Kritisch</option>
+              <option value="high">Hoch</option>
+              <option value="medium">Mittel</option>
+              <option value="low">Niedrig</option>
+            </select>
           </div>
 
           {error && (

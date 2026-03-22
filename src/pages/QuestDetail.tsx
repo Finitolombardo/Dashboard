@@ -6,12 +6,17 @@ import {
   Pause,
   CheckCircle2,
   RotateCcw,
-  Users,
   Archive,
   MoreHorizontal,
-  AlertTriangle,
 } from 'lucide-react';
-import { fetchQuestDetailFromBackend } from '../lib/missionControlApi';
+import {
+  fetchQuestDetailFromBackend,
+  fetchQuestMessagesFromBackend,
+  fetchQuestArtifactsFromBackend,
+  updateQuestStatus,
+  sendQuestMessage,
+  getAgentById,
+} from '../lib/missionControlApi';
 import type { Quest, Message, Event, Artefact } from '../types';
 import StatusBadge from '../components/shared/StatusBadge';
 import PriorityTag from '../components/shared/PriorityTag';
@@ -33,11 +38,17 @@ export default function QuestDetail() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('work');
   const [quest, setQuest] = useState<Quest | null | undefined>(undefined);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [artefacts, setArtefacts] = useState<Artefact[]>([]);
 
   useEffect(() => {
     if (!id) { setQuest(null); return; }
     fetchQuestDetailFromBackend(id)
-      .then(setQuest)
+      .then(q => {
+        setQuest(q);
+        fetchQuestMessagesFromBackend(id).then(setMessages).catch(() => {});
+        fetchQuestArtifactsFromBackend(id).then(setArtefacts).catch(() => {});
+      })
       .catch(() => setQuest(null));
   }, [id]);
 
@@ -57,10 +68,8 @@ export default function QuestDetail() {
     );
   }
 
-  const agent = undefined; // Agent detail not in backend response; AgentChip handles undefined
-  const messages: Message[] = [];
+  const agent = getAgentById(quest.agent_id);
   const events: Event[] = [];
-  const artefacts: Artefact[] = [];
 
   return (
     <div className="h-screen flex flex-col">
@@ -90,11 +99,20 @@ export default function QuestDetail() {
             )}
             {quest.status === 'in_review' && (
               <>
-                <button className="btn-primary"><CheckCircle2 size={14} /> Freigeben</button>
-                <button className="btn-secondary"><RotateCcw size={14} /> Änderungen</button>
+                <button
+                  className="btn-primary"
+                  onClick={() => updateQuestStatus(quest.id, 'Erledigt').then(() => fetchQuestDetailFromBackend(quest.id).then(setQuest)).catch(() => {})}
+                >
+                  <CheckCircle2 size={14} /> Freigeben
+                </button>
+                <button
+                  className="btn-secondary"
+                  onClick={() => updateQuestStatus(quest.id, 'In Arbeit').then(() => fetchQuestDetailFromBackend(quest.id).then(setQuest)).catch(() => {})}
+                >
+                  <RotateCcw size={14} /> Änderungen
+                </button>
               </>
             )}
-            <button className="btn-ghost"><Users size={14} /> Zuweisen</button>
             <button className="btn-ghost"><Archive size={14} /></button>
             <button className="btn-ghost"><MoreHorizontal size={14} /></button>
           </div>
@@ -113,12 +131,6 @@ export default function QuestDetail() {
           <TimeAgo date={quest.updated_at} />
         </div>
 
-        {quest.blocker && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-danger-400 bg-danger-500/10 px-3 py-1.5 rounded">
-            <AlertTriangle size={12} />
-            <span className="font-medium">Blocker:</span> {quest.blocker}
-          </div>
-        )}
       </div>
 
       <div className="border-b border-white/[0.06] bg-surface-900/40 px-6">
@@ -144,7 +156,23 @@ export default function QuestDetail() {
 
       <div className="flex-1 overflow-hidden">
         {activeTab === 'work' && (
-          <QuestWork quest={quest} messages={messages} events={events} />
+          <QuestWork
+            quest={quest}
+            messages={messages}
+            events={events}
+            onSend={content => {
+              setMessages(prev => [...prev, {
+                id: `local-${Date.now()}`,
+                quest_id: quest.id,
+                sender_type: 'operator' as const,
+                sender_name: 'Operator',
+                content,
+                message_type: 'message' as const,
+                created_at: new Date().toISOString(),
+              }]);
+              sendQuestMessage(quest.id, content).catch(() => {});
+            }}
+          />
         )}
         {activeTab === 'outputs' && (
           <QuestOutputs artefacts={artefacts} />
