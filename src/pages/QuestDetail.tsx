@@ -133,13 +133,22 @@ export default function QuestDetail() {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {quest.status === 'ready' && (
-              <button className="btn-primary"><Play size={14} /> Starten</button>
+              <button
+                className="btn-primary"
+                onClick={() => applyQuestAction(quest.id, 'start').then(setQuest).catch(() => {})}
+              ><Play size={14} /> Starten</button>
             )}
             {quest.status === 'in_progress' && (
-              <button className="btn-secondary"><Pause size={14} /> Pausieren</button>
+              <button
+                className="btn-secondary"
+                onClick={() => applyQuestAction(quest.id, 'pause').then(setQuest).catch(() => {})}
+              ><Pause size={14} /> Pausieren</button>
             )}
             {quest.status === 'paused' && (
-              <button className="btn-primary"><Play size={14} /> Fortsetzen</button>
+              <button
+                className="btn-primary"
+                onClick={() => applyQuestAction(quest.id, 'resume').then(setQuest).catch(() => {})}
+              ><Play size={14} /> Fortsetzen</button>
             )}
             {quest.status === 'in_review' && (
               <>
@@ -153,13 +162,17 @@ export default function QuestDetail() {
                     applyQuestAction(quest.id, 'review_accept').then(setQuest).catch(() => {});
                   }}
                 >
-                  <CheckCircle2 size={14} /> Freigeben
+                  <CheckCircle2 size={14} /> Review annehmen
                 </button>
                 <button
                   className="btn-secondary"
-                  onClick={() => applyQuestAction(quest.id, 'restart', 'Änderungen erforderlich. Bitte überarbeiten.').then(setQuest).catch(() => {})}
+                  onClick={() => {
+                    const note = prompt('Revisions-Hinweis (Pflicht):');
+                    if (!note?.trim()) return;
+                    applyQuestAction(quest.id, 'request_revision', note.trim()).then(setQuest).catch(() => {});
+                  }}
                 >
-                  <RotateCcw size={14} /> Änderungen
+                  <RotateCcw size={14} /> Änderungen anfordern
                 </button>
               </>
             )}

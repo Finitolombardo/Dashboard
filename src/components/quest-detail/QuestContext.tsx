@@ -1,7 +1,22 @@
-﻿import type { ElementType, ReactNode } from 'react';
-import { FileText, Link as LinkIcon, BookOpen, Brain, Workflow, Megaphone, ExternalLink, Shield } from 'lucide-react';
+import { useState } from 'react';
+import type { ElementType, ReactNode } from 'react';
+import {
+  FileText,
+  Link as LinkIcon,
+  BookOpen,
+  Brain,
+  Workflow,
+  Megaphone,
+  ExternalLink,
+  Shield,
+  ChevronDown,
+  AlertOctagon,
+  Lightbulb,
+  Package,
+} from 'lucide-react';
 import type { Quest } from '../../types';
-import { getWorkflowById, getCampaignById, getAgentById } from '../../data/mock';
+import { getWorkflowById, getCampaignById } from '../../data/mock';
+import { getAgentById } from '../../lib/missionControlApi';
 import DecisionTracePanel from '../shared/DecisionTracePanel';
 import AgentResponsibilityCard from '../shared/AgentResponsibilityCard';
 import { pickDecisionTrace } from '../../lib/decisionTrace';
@@ -21,7 +36,7 @@ export default function QuestContext({ quest }: QuestContextProps) {
     <div className="h-full overflow-y-auto px-6 py-4 space-y-4">
       {quest.scope && (
         <ContextSection title="Briefing" icon={FileText}>
-          <p className="text-sm text-surface-300 leading-relaxed">{quest.scope}</p>
+          <p className="text-sm text-surface-300 leading-relaxed whitespace-pre-wrap">{quest.scope}</p>
         </ContextSection>
       )}
 
@@ -37,6 +52,32 @@ export default function QuestContext({ quest }: QuestContextProps) {
           platformAdapter={trace?.platform_adapter ?? null}
         />
       </ContextSection>
+
+      <ContextSection title="Schritte" icon={Workflow}>
+        <div className="space-y-2">
+          {quest.current_step && (
+            <div className="text-xs text-surface-300 bg-surface-900/50 px-3 py-2 rounded">
+              <span className="text-surface-500 font-medium">Aktuell:</span> {quest.current_step}
+            </div>
+          )}
+          {quest.next_step && (
+            <div className="text-xs text-surface-300 bg-surface-900/50 px-3 py-2 rounded">
+              <span className="text-surface-500 font-medium">Nächster:</span> {quest.next_step}
+            </div>
+          )}
+          {!quest.current_step && !quest.next_step && (
+            <p className="text-xs text-surface-600 italic">Keine Schritte definiert</p>
+          )}
+        </div>
+      </ContextSection>
+
+      {quest.blocker && (
+        <ContextSection title="Blocker" icon={AlertOctagon}>
+          <div className="text-xs text-danger-400 bg-danger-500/10 px-3 py-2 rounded">
+            {quest.blocker}
+          </div>
+        </ContextSection>
+      )}
 
       <ContextSection title="Verknüpfte Dokumente" icon={LinkIcon}>
         <div className="space-y-2">
@@ -78,14 +119,22 @@ export default function QuestContext({ quest }: QuestContextProps) {
         </ContextSection>
       )}
 
-      <ContextSection title="Referenzen" icon={BookOpen}>
+      <ContextSection title="Verknüpfte Artefakte" icon={Package} defaultOpen={false}>
+        <p className="text-xs text-surface-600 italic">Artefakte werden im Ergebnisse-Tab angezeigt</p>
+      </ContextSection>
+
+      <ContextSection title="Verbesserungsanalyse" icon={Lightbulb} defaultOpen={false}>
+        <p className="text-xs text-surface-600 italic">Wird nach Quest-Abschluss vom Worker erstellt</p>
+      </ContextSection>
+
+      <ContextSection title="Referenzen" icon={BookOpen} defaultOpen={false}>
         <div className="space-y-2">
           <DocItem title="E-Mail-Best-Practices" type="Referenz" />
           <DocItem title="Branchenanalyse DACH 2025" type="Research" />
         </div>
       </ContextSection>
 
-      <ContextSection title="Memory" icon={Brain}>
+      <ContextSection title="Memory" icon={Brain} defaultOpen={false}>
         <div className="space-y-2">
           <div className="text-xs text-surface-400 bg-surface-900/50 px-3 py-2 rounded">
             <p>Frühere Kampagnen im DACH-Markt zeigten bessere Performance mit personalisiertem Einstieg.</p>
@@ -97,22 +146,40 @@ export default function QuestContext({ quest }: QuestContextProps) {
       </ContextSection>
 
       {quest.notes && (
-        <ContextSection title="Notizen" icon={FileText}>
-          <p className="text-sm text-surface-400">{quest.notes}</p>
+        <ContextSection title="Notizen" icon={FileText} defaultOpen={false}>
+          <p className="text-sm text-surface-400 whitespace-pre-wrap">{quest.notes}</p>
         </ContextSection>
       )}
     </div>
   );
 }
 
-function ContextSection({ title, icon: Icon, children }: { title: string; icon: ElementType; children: ReactNode }) {
+function ContextSection({
+  title,
+  icon: Icon,
+  children,
+  defaultOpen = true,
+}: {
+  title: string;
+  icon: ElementType;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2">
-        <Icon size={14} className="text-surface-500" />
-        <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wider">{title}</h3>
-      </div>
-      {children}
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 mb-2 w-full text-left group hover:opacity-80 transition-opacity"
+      >
+        <Icon size={14} className="text-surface-500 flex-shrink-0" />
+        <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wider flex-1">{title}</h3>
+        <ChevronDown
+          size={12}
+          className={`text-surface-600 transition-transform duration-200 ${open ? '' : '-rotate-90'}`}
+        />
+      </button>
+      {open && children}
     </div>
   );
 }

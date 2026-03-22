@@ -207,9 +207,32 @@ export async function fetchQuestEventsFromBackend(questId: string): Promise<impo
 }
 
 export async function fetchQuestArtifactsFromBackend(questId: string): Promise<Artefact[]> {
-  const data = (await apiFetch(`/api/tasks/${questId}/artifacts`)) as Record<string, unknown>;
-  const items = data.artifacts ?? (Array.isArray(data) ? data : []);
-  return (items as object[]).map(raw => mapArtefact(raw, questId));
+  try {
+    const data = (await apiFetch(`/api/tasks/${questId}/artifacts`)) as Record<string, unknown>;
+    const items = data.items ?? data.artifacts ?? (Array.isArray(data) ? data : []);
+    return (items as object[]).map((raw: any) => {
+      // Backend returns: { id, type: "local_file"|"notion"|"drive"|"link", label, href, filename, sizeBytes, updatedAt }
+      const backendType = raw.type ?? "file";
+      const frontendType = backendType === "local_file" ? "file"
+        : backendType === "notion" || backendType === "drive" || backendType === "link" ? "link"
+        : backendType;
+      const href = raw.href ?? raw.url ?? raw.path ?? "";
+      return {
+        id: raw.id ?? String(Math.random()),
+        quest_id: questId,
+        title: raw.label ?? raw.title ?? raw.name ?? raw.filename ?? "Artefakt",
+        type: frontendType as ArtefactType,
+        source: backendType === "notion" ? "Notion" : backendType === "drive" ? "Google Drive" : raw.source ?? "Lokal",
+        created_by: raw.createdBy ?? raw.created_by ?? raw.actor ?? "System",
+        url: backendType === "local_file" && href.startsWith("/api/")
+          ? `${API_BASE_URL}${href}`
+          : href,
+        created_at: raw.updatedAt ?? raw.createdAt ?? raw.created_at ?? new Date().toISOString(),
+      };
+    });
+  } catch {
+    return [];
+  }
 }
 
 export async function sendQuestMessage(questId: string, content: string): Promise<Message> {

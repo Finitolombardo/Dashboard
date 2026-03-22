@@ -60,7 +60,11 @@ export default function QuestOutputs({ artefacts }: QuestOutputsProps) {
                   </div>
                   <TimeAgo date={artefact.created_at} className="mt-1 block" />
                 </div>
-                <button className="text-surface-500 hover:text-gold-400 transition-colors">
+                <button
+                  onClick={() => artefact.url && window.open(artefact.url, '_blank', 'noopener')}
+                  className="text-surface-500 hover:text-gold-400 transition-colors"
+                  title="Öffnen"
+                >
                   <ExternalLink size={14} />
                 </button>
               </div>
