@@ -11,9 +11,8 @@ import {
   MoreHorizontal,
   AlertTriangle,
 } from 'lucide-react';
-import { getMessagesForQuest, getEventsForQuest, getArtefactsForQuest } from '../data/mock';
-import { supabase } from '../lib/supabase';
-import type { Quest } from '../types';
+import { fetchQuestDetailFromBackend } from '../lib/missionControlApi';
+import type { Quest, Message, Event, Artefact } from '../types';
 import StatusBadge from '../components/shared/StatusBadge';
 import PriorityTag from '../components/shared/PriorityTag';
 import AgentChip from '../components/shared/AgentChip';
@@ -37,14 +36,9 @@ export default function QuestDetail() {
 
   useEffect(() => {
     if (!id) { setQuest(null); return; }
-    supabase
-      .from('quests')
-      .select('*, agent:agents(*)')
-      .eq('id', id)
-      .single()
-      .then(({ data, error }) => {
-        setQuest(error || !data ? null : (data as Quest));
-      });
+    fetchQuestDetailFromBackend(id)
+      .then(setQuest)
+      .catch(() => setQuest(null));
   }, [id]);
 
   if (quest === undefined) {
@@ -63,10 +57,10 @@ export default function QuestDetail() {
     );
   }
 
-  const agent = quest.agent ?? undefined;
-  const messages = getMessagesForQuest(quest.id);
-  const events = getEventsForQuest(quest.id);
-  const artefacts = getArtefactsForQuest(quest.id);
+  const agent = undefined; // Agent detail not in backend response; AgentChip handles undefined
+  const messages: Message[] = [];
+  const events: Event[] = [];
+  const artefacts: Artefact[] = [];
 
   return (
     <div className="h-screen flex flex-col">

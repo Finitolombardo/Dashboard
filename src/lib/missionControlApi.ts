@@ -122,6 +122,14 @@ export async function fetchAgentsFromBackend(): Promise<Agent[]> {
   }));
 }
 
+// ─── Quest detail ─────────────────────────────────────────────────────────
+
+export async function fetchQuestDetailFromBackend(questId: string): Promise<Quest> {
+  const data = (await apiFetch(`/api/tasks/${encodeURIComponent(questId)}`)) as Record<string, unknown>;
+  const raw = data.quest ?? data;
+  return mapQuest(raw);
+}
+
 // ─── Quest detail sub-resources ───────────────────────────────────────────
 
 export async function fetchQuestMessagesFromBackend(questId: string): Promise<unknown[]> {
