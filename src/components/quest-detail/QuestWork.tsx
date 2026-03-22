@@ -1,17 +1,25 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Cpu, HelpCircle, CheckCircle2, Package } from 'lucide-react';
-import type { Quest, Message, Event } from '../../types';
+import type { Quest, Message, Event, Agent } from '../../types';
 import TimeAgo from '../shared/TimeAgo';
 
 interface QuestWorkProps {
   quest: Quest;
   messages: Message[];
   events: Event[];
+  agent?: Agent;
+  isProcessing?: boolean;
   onSend?: (content: string) => void;
 }
 
-export default function QuestWork({ quest, messages, events, onSend }: QuestWorkProps) {
+export default function QuestWork({ quest, messages, events, agent, isProcessing, onSend }: QuestWorkProps) {
   const [newMessage, setNewMessage] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length, isProcessing]);
 
   function handleSend() {
     const text = newMessage.trim();
@@ -20,9 +28,28 @@ export default function QuestWork({ quest, messages, events, onSend }: QuestWork
     onSend?.(text);
   }
 
+  const agentName = agent?.name || 'Agent';
+  const isActiveQuest = !['done', 'archived'].includes(quest.status);
+
   return (
     <div className="h-full flex">
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Agent status bar */}
+        {agent && (
+          <div className="px-6 py-2 border-b border-white/[0.06] bg-surface-900/30 flex items-center gap-2">
+            <Bot size={14} className="text-surface-400" />
+            <span className="text-xs font-medium text-surface-300">{agentName}</span>
+            <span className="text-2xs text-surface-600">·</span>
+            <span className="text-2xs text-surface-500">{agent.role}</span>
+            <div className={`w-1.5 h-1.5 rounded-full ml-auto ${
+              isProcessing ? 'bg-gold-400 animate-pulse' : isActiveQuest ? 'bg-emerald-400' : 'bg-surface-600'
+            }`} />
+            <span className="text-2xs text-surface-500">
+              {isProcessing ? 'arbeitet…' : isActiveQuest ? 'bereit' : 'inaktiv'}
+            </span>
+          </div>
+        )}
+
         {(quest.current_step || quest.next_step) && (
           <div className="px-6 py-3 border-b border-white/[0.06] bg-surface-900/30">
             <div className="grid grid-cols-2 gap-4">
@@ -43,9 +70,35 @@ export default function QuestWork({ quest, messages, events, onSend }: QuestWork
         )}
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          {messages.length === 0 && (
+            <div className="flex items-center justify-center h-32 text-surface-600 text-sm">
+              Noch keine Nachrichten. Schreibe dem Agenten.
+            </div>
+          )}
           {messages.map(msg => (
             <MessageBubble key={msg.id} message={msg} />
           ))}
+          {/* Typing indicator */}
+          {isProcessing && (
+            <div className="flex gap-2.5">
+              <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 bg-surface-700">
+                <Bot size={14} className="text-surface-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-2xs font-medium text-surface-400">{agentName}</span>
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-surface-900/60">
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-surface-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-surface-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-surface-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={chatEndRef} />
         </div>
 
         <div className="px-6 py-3 border-t border-white/[0.06] bg-surface-900/40">
@@ -53,7 +106,7 @@ export default function QuestWork({ quest, messages, events, onSend }: QuestWork
             <input
               type="text"
               className="input"
-              placeholder="Nachricht an den Agenten..."
+              placeholder={`Nachricht an ${agentName}...`}
               value={newMessage}
               onChange={e => setNewMessage(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSend()}
@@ -73,6 +126,9 @@ export default function QuestWork({ quest, messages, events, onSend }: QuestWork
           <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wider">Zeitleiste</h3>
         </div>
         <div className="px-4 py-3 space-y-3">
+          {events.length === 0 && (
+            <p className="text-2xs text-surface-600">Noch keine Events.</p>
+          )}
           {events.map(event => (
             <div key={event.id} className="flex gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-surface-600 mt-1.5 flex-shrink-0" />
@@ -108,6 +164,8 @@ function MessageBubble({ message }: { message: Message }) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-surface-900/50 rounded text-2xs text-surface-500">
         <Cpu size={12} className="flex-shrink-0" />
+        <span className="font-medium text-surface-400">{message.sender_name}</span>
+        <span className="text-surface-600">·</span>
         <span>{message.content}</span>
         <TimeAgo date={message.created_at} className="ml-auto" />
       </div>

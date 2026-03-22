@@ -69,6 +69,10 @@ export default function QuestDetail() {
           const localOnly = prev.filter(m => m.id.startsWith('local-') && !serverIds.has(m.id));
           return [...serverMsgs, ...localOnly];
         });
+        // Turn off processing indicator when agent message arrives
+        if (serverMsgs.some(m => m.sender_type === 'agent')) {
+          setIsProcessing(false);
+        }
       }).catch(() => {});
       fetchQuestDetailFromBackend(id).then(setQuest).catch(() => {});
     }, 5000);
@@ -95,6 +99,7 @@ export default function QuestDetail() {
   const agent = getAgentById(quest.agent_id);
   const events: Event[] = [];
   const hasAgentWork = messages.some(m => m.sender_type === 'agent') || quest.progress > 0;
+  const [isProcessing, setIsProcessing] = useState(false);
 
   return (
     <div className="h-screen flex flex-col">
@@ -207,6 +212,8 @@ export default function QuestDetail() {
             quest={quest}
             messages={messages}
             events={events}
+            agent={agent}
+            isProcessing={isProcessing}
             onSend={content => {
               const now = new Date().toISOString();
               // Optimistic operator message
@@ -224,32 +231,32 @@ export default function QuestDetail() {
 
               if (intent.type !== 'message') {
                 // Meta-command: execute system action, no dispatch
-                // For delete: confirm first
                 if (intent.type === 'delete_quest') {
                   if (!confirm('Quest wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) return;
                 }
+                const agentName = agent?.name || 'Archon';
                 sendQuestMessage(quest.id, content)
                   .then(() => executeOperatorIntent(intent, quest.id))
-                  .then(result => {
+                  .then(async result => {
                     if (result.deleted) {
-                      // Quest was deleted — navigate back
                       navigate('/quests');
                       return;
                     }
-                    // Show system confirmation in chat
+                    // Refresh quest state FIRST so header is in sync
+                    const updatedQuest = await fetchQuestDetailFromBackend(quest.id);
+                    setQuest(updatedQuest);
+                    // Show system confirmation with correct agent name
                     setMessages(prev => [...prev, {
                       id: `sys-${Date.now()}`,
                       quest_id: quest.id,
                       sender_type: 'system' as const,
-                      sender_name: 'Archon',
+                      sender_name: agentName,
                       content: result.systemMessage,
                       message_type: 'status' as const,
                       created_at: new Date().toISOString(),
                     }]);
-                    // Persist the system message
-                    sendQuestMessage(quest.id, `[Archon] ${result.systemMessage}`);
-                    // Refresh quest state
-                    fetchQuestDetailFromBackend(quest.id).then(setQuest);
+                    // Persist system message with agent name
+                    sendQuestMessage(quest.id, `[${agentName}] ${result.systemMessage}`);
                   })
                   .catch(err => {
                     setMessages(prev => [...prev, {
@@ -264,6 +271,7 @@ export default function QuestDetail() {
                   });
               } else {
                 // Regular message: send to thread + dispatch to agent
+                setIsProcessing(true);
                 sendQuestMessage(quest.id, content)
                   .then(() => fetchQuestMessagesFromBackend(quest.id))
                   .then(serverMsgs => {
@@ -275,7 +283,11 @@ export default function QuestDetail() {
                   })
                   .then(() => dispatchQuest(quest.id))
                   .then(() => fetchQuestDetailFromBackend(quest.id).then(setQuest))
-                  .catch(() => {});
+                  .catch(() => {})
+                  .finally(() => {
+                    // Keep processing indicator for 15s or until next poll brings agent message
+                    setTimeout(() => setIsProcessing(false), 15000);
+                  });
               }
             }}
           />

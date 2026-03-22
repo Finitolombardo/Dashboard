@@ -13,27 +13,31 @@ import TimeAgo from '../components/shared/TimeAgo';
 import NewQuestModal from '../components/quests/NewQuestModal';
 
 const filterTabs: { value: string; label: string }[] = [
+  { value: 'active', label: 'Aktiv' },
   { value: 'all', label: 'Alle' },
   { value: 'in_progress', label: 'In Bearbeitung' },
-  { value: 'blocked', label: 'Blockiert' },
-  { value: 'waiting', label: 'Wartend' },
-  { value: 'in_review', label: 'In Prüfung' },
-  { value: 'ready', label: 'Bereit' },
   { value: 'draft', label: 'Entwurf' },
-  { value: 'done', label: 'Erledigt' },
+  { value: 'ready', label: 'Bereit' },
+  { value: 'in_review', label: 'In Prüfung' },
+  { value: 'waiting', label: 'Wartend' },
+  { value: 'blocked', label: 'Blockiert' },
   { value: 'paused', label: 'Pausiert' },
+  { value: 'done', label: 'Erledigt' },
 ];
+
+const INACTIVE_STATUSES = ['done', 'archived'];
 
 export default function Quests() {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('active');
   const [search, setSearch] = useState('');
   const [showNewQuest, setShowNewQuest] = useState(false);
   const { quests, loading, refresh } = useQuests();
   const { agents } = useAgents();
 
   const filtered = quests.filter(q => {
-    if (filter !== 'all' && q.status !== filter) return false;
+    if (filter === 'active' && INACTIVE_STATUSES.includes(q.status)) return false;
+    if (filter !== 'all' && filter !== 'active' && q.status !== filter) return false;
     if (search && !q.title.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
