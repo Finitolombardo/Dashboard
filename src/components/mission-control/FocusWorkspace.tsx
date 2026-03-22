@@ -1,6 +1,5 @@
 import type { ReactNode, ElementType } from 'react';
-import type { Signal, SignalType } from '../../types';
-import { getQuestById, getWorkflowById, getCampaignById, getSessionById, getAgentById } from '../../data/mock';
+import type { Signal, SignalType, Quest } from '../../types';
 import StatusBadge from '../shared/StatusBadge';
 import PriorityTag from '../shared/PriorityTag';
 import AgentChip from '../shared/AgentChip';
@@ -25,6 +24,7 @@ import {
 
 interface FocusWorkspaceProps {
   signal: Signal | null;
+  quests?: Quest[];
 }
 
 
@@ -57,7 +57,7 @@ function ActionButton({
   );
 }
 
-export default function FocusWorkspace({ signal }: FocusWorkspaceProps) {
+export default function FocusWorkspace({ signal, quests = [] }: FocusWorkspaceProps) {
   const navigate = useNavigate();
 
   if (!signal) {
@@ -76,11 +76,11 @@ export default function FocusWorkspace({ signal }: FocusWorkspaceProps) {
     );
   }
 
-  const quest = signal.linked_quest_id ? getQuestById(signal.linked_quest_id) : undefined;
-  const workflow = signal.linked_workflow_id ? getWorkflowById(signal.linked_workflow_id) : undefined;
-  const campaign = signal.linked_campaign_id ? getCampaignById(signal.linked_campaign_id) : undefined;
-  const session = signal.linked_session_id ? getSessionById(signal.linked_session_id) : undefined;
-  const agent = quest?.agent_id ? getAgentById(quest.agent_id) : undefined;
+  const quest = signal.linked_quest_id ? quests.find(q => q.id === signal.linked_quest_id) : undefined;
+  const workflow = undefined;
+  const campaign = undefined;
+  const session = undefined;
+  const agent = undefined;
 
   const operationalSummary = getOperationalSummary(signal, quest, workflow, campaign, session);
   const workflowHealth = workflow ? mapHealthStatus(workflow.execution_health) : undefined;
@@ -167,9 +167,9 @@ function SignalActions({
   navigate,
 }: {
   signal: Signal;
-  quest: ReturnType<typeof getQuestById>;
-  campaign: ReturnType<typeof getCampaignById>;
-  session: ReturnType<typeof getSessionById>;
+  quest: Quest | undefined;
+  campaign: undefined;
+  session: undefined;
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const actionMap: Partial<Record<SignalType, ReactNode>> = {
@@ -285,8 +285,8 @@ function LinkedQuestCard({
   agent,
   onClick,
 }: {
-  quest: NonNullable<ReturnType<typeof getQuestById>>;
-  agent: ReturnType<typeof getAgentById>;
+  quest: Quest;
+  agent?: undefined;
   onClick: () => void;
 }) {
   return (
@@ -338,7 +338,7 @@ function LinkedWorkflowCard({
   health,
   onClick,
 }: {
-  workflow: NonNullable<ReturnType<typeof getWorkflowById>>;
+  workflow: NonNullable<undefined>;
   health?: ReturnType<typeof mapHealthStatus>;
   onClick: () => void;
 }) {
@@ -374,7 +374,7 @@ function LinkedCampaignCard({
   campaign,
   onClick,
 }: {
-  campaign: NonNullable<ReturnType<typeof getCampaignById>>;
+  campaign: NonNullable<undefined>;
   onClick: () => void;
 }) {
   const openRate = campaign.sent > 0 ? ((campaign.opened / campaign.sent) * 100).toFixed(1) : '0';
@@ -404,7 +404,7 @@ function LinkedSessionCard({
   session,
   onClick,
 }: {
-  session: NonNullable<ReturnType<typeof getSessionById>>;
+  session: NonNullable<undefined>;
   onClick: () => void;
 }) {
   return (
@@ -501,10 +501,10 @@ function mapHealthStatus(health: string): 'healthy' | 'degraded' | 'error' {
 
 function getOperationalSummary(
   signal: Signal,
-  quest: ReturnType<typeof getQuestById>,
-  workflow: ReturnType<typeof getWorkflowById>,
-  campaign: ReturnType<typeof getCampaignById>,
-  session: ReturnType<typeof getSessionById>,
+  quest: Quest | undefined,
+  workflow: undefined,
+  campaign: undefined,
+  session: undefined,
 ): OperationalSummary | null {
   switch (signal.type) {
     case 'blocker':

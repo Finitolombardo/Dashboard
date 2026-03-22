@@ -1,14 +1,6 @@
 ﻿import type { ReactNode, ElementType } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Signal } from '../../types';
-import {
-  getQuestById,
-  getAgentById,
-  getWorkflowById,
-  getCampaignById,
-  getSessionById,
-  getQuestProposalById,
-} from '../../data/mock';
+import type { Signal, Quest } from '../../types';
 import TimeAgo from '../shared/TimeAgo';
 import DecisionTracePanel from '../shared/DecisionTracePanel';
 import AgentResponsibilityCard from '../shared/AgentResponsibilityCard';
@@ -32,9 +24,10 @@ import {
 
 interface ContextRailProps {
   signal: Signal | null;
+  quests?: Quest[];
 }
 
-export default function ContextRail({ signal }: ContextRailProps) {
+export default function ContextRail({ signal, quests = [] }: ContextRailProps) {
   const navigate = useNavigate();
 
   if (!signal) {
@@ -53,20 +46,16 @@ export default function ContextRail({ signal }: ContextRailProps) {
     );
   }
 
-  const quest = signal.linked_quest_id ? getQuestById(signal.linked_quest_id) : undefined;
-  const workflow = signal.linked_workflow_id ? getWorkflowById(signal.linked_workflow_id) : undefined;
-  const campaign = signal.linked_campaign_id ? getCampaignById(signal.linked_campaign_id) : undefined;
-  const session = signal.linked_session_id ? getSessionById(signal.linked_session_id) : undefined;
+  const quest = signal.linked_quest_id ? quests.find(q => q.id === signal.linked_quest_id) : undefined;
+  const workflow = undefined;
+  const campaign = undefined;
+  const session = undefined;
 
-  const trace = pickDecisionTrace(signal.decision_trace, quest?.decision_trace, session?.decision_trace);
-  const proposal = signal.quest_proposal ?? getQuestProposalById(signal.quest_proposal_id ?? null);
+  const trace = pickDecisionTrace(signal.decision_trace, quest?.decision_trace, undefined);
+  const proposal = signal.quest_proposal ?? undefined;
 
-  const responsibleAgent = getAgentById(
-    signal.responsible_agent_id ?? quest?.responsible_agent_id ?? quest?.agent_id ?? session?.responsible_agent_id ?? session?.agent_id ?? null,
-  );
-  const lastActorAgent = getAgentById(
-    signal.last_actor_agent_id ?? quest?.last_actor_agent_id ?? session?.last_actor_agent_id ?? trace?.actor_agent_id ?? null,
-  );
+  const responsibleAgent = undefined;
+  const lastActorAgent = undefined;
 
   const actions = getContextualActions(signal, quest, workflow, campaign, session, navigate);
 
@@ -304,10 +293,10 @@ interface ActionItem {
 
 function getContextualActions(
   signal: Signal,
-  quest: ReturnType<typeof getQuestById>,
-  workflow: ReturnType<typeof getWorkflowById>,
-  campaign: ReturnType<typeof getCampaignById>,
-  session: ReturnType<typeof getSessionById>,
+  quest: Quest | undefined,
+  workflow: undefined,
+  campaign: undefined,
+  session: undefined,
   navigate: ReturnType<typeof useNavigate>,
 ): ActionItem[] {
   const actions: ActionItem[] = [];

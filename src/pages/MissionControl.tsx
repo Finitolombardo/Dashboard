@@ -79,11 +79,11 @@ export default function MissionControl() {
           </aside>
 
           <section className="min-w-0 flex-1 border-x border-white/[0.03] bg-[linear-gradient(180deg,rgba(13,14,18,0.96),rgba(8,9,11,1))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-            <FocusWorkspace signal={selectedSignal} />
+            <FocusWorkspace signal={selectedSignal} quests={quests} />
           </section>
 
           <aside className="w-[292px] flex-shrink-0 border-l border-white/5 bg-surface-900/30">
-            <ContextRail signal={selectedSignal} />
+            <ContextRail signal={selectedSignal} quests={quests} />
           </aside>
         </main>
       </div>
