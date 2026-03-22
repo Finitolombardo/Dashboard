@@ -121,28 +121,27 @@ export default function QuestWork({ quest, messages, events, agent, isProcessing
         </div>
       </div>
 
-      <div className="w-64 border-l border-white/[0.06] bg-surface-900/40 overflow-y-auto flex-shrink-0">
-        <div className="px-4 py-3 border-b border-white/[0.06]">
-          <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wider">Zeitleiste</h3>
-        </div>
-        <div className="px-4 py-3 space-y-3">
-          {events.length === 0 && (
-            <p className="text-2xs text-surface-600">Noch keine Events.</p>
-          )}
-          {events.map(event => (
-            <div key={event.id} className="flex gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-surface-600 mt-1.5 flex-shrink-0" />
-              <div>
-                <p className="text-2xs text-surface-300">{event.description}</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-2xs text-surface-600">{event.actor}</span>
-                  <TimeAgo date={event.created_at} />
+      {events.length > 0 && (
+        <div className="w-64 border-l border-white/[0.06] bg-surface-900/40 overflow-y-auto flex-shrink-0">
+          <div className="px-4 py-3 border-b border-white/[0.06]">
+            <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wider">Zeitleiste</h3>
+          </div>
+          <div className="px-4 py-3 space-y-3">
+            {events.map(event => (
+              <div key={event.id} className="flex gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-surface-600 mt-1.5 flex-shrink-0" />
+                <div>
+                  <p className="text-2xs text-surface-300">{event.description}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-2xs text-surface-600">{event.actor}</span>
+                    <TimeAgo date={event.created_at} />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
