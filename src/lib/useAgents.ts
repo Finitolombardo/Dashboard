@@ -1,32 +1,28 @@
-import { useState, useEffect } from 'react';
-import { supabase } from './supabase';
-import { mockAgents } from '../data/mock';
+import { useState, useEffect, useCallback } from 'react';
+import { fetchAgentsFromBackend } from './missionControlApi';
 import type { Agent } from '../types';
 
-const configured = !!(
-  import.meta.env.VITE_SUPABASE_URL &&
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
-
 export function useAgents() {
-  const [agents, setAgents] = useState<Agent[]>(configured ? [] : mockAgents);
-  const [loading, setLoading] = useState(configured);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!configured) return;
-    supabase
-      .from('agents')
-      .select('*')
-      .order('created_at', { ascending: true })
-      .then(({ data, error }) => {
-        if (!error && data && data.length > 0) {
-          setAgents(data as Agent[]);
-        } else {
-          setAgents(mockAgents);
-        }
-        setLoading(false);
-      });
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchAgentsFromBackend();
+      setAgents(data);
+    } catch (err) {
+      console.warn('[useAgents] Backend fetch failed:', err);
+      setError('Agenten konnten nicht geladen werden.');
+      setAgents([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return { agents, loading };
+  useEffect(() => { load(); }, [load]);
+
+  return { agents, loading, error, refresh: load };
 }

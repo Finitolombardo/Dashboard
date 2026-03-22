@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Signal } from '../types';
-import { mockSignals } from '../data/mock';
 import { useQuests } from '../lib/useQuests';
+import { useSignals } from '../lib/useSignals';
 import PriorityFeed from '../components/mission-control/PriorityFeed';
 import FocusWorkspace from '../components/mission-control/FocusWorkspace';
 import ContextRail from '../components/mission-control/ContextRail';
@@ -10,9 +10,10 @@ import { Radio } from 'lucide-react';
 export default function MissionControl() {
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
   const { quests } = useQuests();
+  const signals = useSignals(quests);
 
-  const openCount = mockSignals.filter(signal => signal.status === 'open').length;
-  const criticalCount = mockSignals.filter(signal => signal.severity === 'critical' && signal.status === 'open').length;
+  const openCount = signals.filter(s => s.status === 'open').length;
+  const criticalCount = signals.filter(s => s.severity === 'critical' && s.status === 'open').length;
   const activeQuestCount = quests.filter(q => ['in_progress', 'in_review', 'blocked'].includes(q.status)).length;
 
   return (
@@ -71,7 +72,7 @@ export default function MissionControl() {
         <main className="flex min-h-0 flex-1">
           <aside className="w-[356px] flex-shrink-0 border-r border-white/5 bg-surface-900/35">
             <PriorityFeed
-              signals={mockSignals}
+              signals={signals}
               selectedId={selectedSignal?.id || null}
               onSelect={setSelectedSignal}
             />

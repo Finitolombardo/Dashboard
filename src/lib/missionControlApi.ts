@@ -1,84 +1,121 @@
 import { API_BASE_URL } from "./config";
-import type { Quest, Priority, QuestStatus } from "../types";
+import type { Quest, Agent, Priority, QuestStatus, AgentStatus } from "../types";
 
-// Map backend German status strings -> frontend QuestStatus enum
+// ─── Status / Priority mappers ─────────────────────────────────────────────
+
 function mapStatus(backendStatus: string): QuestStatus {
   const map: Record<string, QuestStatus> = {
-    "Ausstehend":   "ready",
-    "Geplant":      "draft",
-    "In Arbeit":    "in_progress",
-    "Aktiv":        "in_progress",
-    "Blockiert":    "blocked",
-    "Pruefung":     "in_review",
-    "Erledigt":     "done",
-    "Archiviert":   "archived",
-    "Pausiert":     "paused",
-    "Wartend":      "waiting",
-    "Auf Hold":     "paused",
+    Ausstehend: "ready",
+    Geplant: "draft",
+    "In Arbeit": "in_progress",
+    Aktiv: "in_progress",
+    Blockiert: "blocked",
+    Pruefung: "in_review",
+    Erledigt: "done",
+    Archiviert: "archived",
+    Pausiert: "paused",
+    Wartend: "waiting",
+    "Auf Hold": "paused",
   };
   return map[backendStatus] ?? "draft";
 }
 
-// Map backend priority (number 1-4) -> frontend Priority enum
 function mapPriority(p: number | string | undefined): Priority {
-  if (typeof p === "string" && ["critical","high","medium","low"].includes(p)) {
+  if (typeof p === "string" && ["critical", "high", "medium", "low"].includes(p))
     return p as Priority;
-  }
-  const numMap: Record<number, Priority> = {
-    1: "critical",
-    2: "high",
-    3: "medium",
-    4: "low",
-  };
+  const numMap: Record<number, Priority> = { 1: "critical", 2: "high", 3: "medium", 4: "low" };
   return numMap[Number(p)] ?? "medium";
 }
+
+function mapAgentStatus(s: string | undefined): AgentStatus {
+  if (s === "Working") return "working";
+  if (s === "Idle") return "idle";
+  return "offline";
+}
+
+// ─── Quest mapper ──────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapQuest(raw: any): Quest {
   const op = raw.operationalState ?? {};
   return {
-    id:                   raw.id,
-    title:                raw.title ?? "",
-    goal:                 raw.goal ?? raw.description ?? raw.summary ?? "",
-    scope:                "",
-    status:               mapStatus(raw.status),
-    priority:             mapPriority(raw.priority),
-    agent_id:             raw.assignedAgentId ?? null,
-    current_step:         (op.lastStep ?? raw.currentSubtask ?? "").slice(0, 200),
-    next_step:            raw.nextStep ?? raw.nextAction ?? "",
-    blocker:              raw.blockedReason ?? raw.missingInput ?? "",
-    progress:             typeof raw.progress === "number" ? raw.progress : 0,
-    linked_workflow_id:   null,
-    linked_campaign_id:   null,
-    notes:                raw.notes ?? "",
-    created_at:           raw.createdAt ?? new Date().toISOString(),
-    updated_at:           raw.updatedAt ?? new Date().toISOString(),
+    id: raw.id,
+    title: raw.title ?? "",
+    goal: raw.goal ?? raw.description ?? raw.summary ?? "",
+    scope: "",
+    status: mapStatus(raw.status),
+    priority: mapPriority(raw.priority),
+    agent_id: raw.assignedAgentId ?? null,
+    current_step: (op.lastStep ?? raw.currentSubtask ?? "").slice(0, 200),
+    next_step: raw.nextStep ?? raw.nextAction ?? "",
+    blocker: raw.blockedReason ?? raw.missingInput ?? "",
+    progress: typeof raw.progress === "number" ? raw.progress : 0,
+    linked_workflow_id: null,
+    linked_campaign_id: null,
+    notes: raw.notes ?? "",
+    created_at: raw.createdAt ?? new Date().toISOString(),
+    updated_at: raw.updatedAt ?? new Date().toISOString(),
     responsible_agent_id: raw.assignedAgentId ?? null,
-    last_actor_agent_id:  raw.lastActiveAgentId ?? null,
+    last_actor_agent_id: raw.lastActiveAgentId ?? null,
   };
 }
 
-/**
- * Fetch quests from the backend API.
- */
-export async function fetchQuestsFromBackend(): Promise<Quest[]> {
-  const res = await fetch(`${API_BASE_URL}/api/tasks`, {
+// ─── Agent mapper ──────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mapAgent(raw: any): Agent {
+  return {
+    id: raw.key ?? raw.id ?? "",
+    name: raw.name ?? raw.key ?? "",
+    role: raw.role ?? "",
+    status: mapAgentStatus(raw.status),
+    capabilities: Array.isArray(raw.integrations) ? raw.integrations.join(", ") : "",
+    current_model: raw.model ?? "n/a",
+    workload: 0,
+    created_at: raw.lastSeen ?? new Date().toISOString(),
+    updated_at: raw.lastSeen ?? new Date().toISOString(),
+  };
+}
+
+// ─── Fetch helpers ─────────────────────────────────────────────────────────
+
+async function apiFetch(path: string): Promise<unknown> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     headers: { "Content-Type": "application/json" },
   });
-  if (!res.ok) throw new Error(`Backend API ${res.status}: ${API_BASE_URL}/api/tasks`);
-  const data: unknown = await res.json();
-  const d = data as Record<string, unknown>;
-  const items = d.items ?? d.quests ?? (Array.isArray(data) ? data : []);
+  if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
+  return res.json();
+}
+
+// ─── Quests ────────────────────────────────────────────────────────────────
+
+export async function fetchQuestsFromBackend(): Promise<Quest[]> {
+  const data = (await apiFetch("/api/tasks")) as Record<string, unknown>;
+  const items = data.items ?? data.quests ?? (Array.isArray(data) ? data : []);
   return (items as object[]).map(mapQuest);
 }
 
-/**
- * Fetch agents from the backend API.
- */
-export async function fetchAgentsFromBackend(): Promise<unknown[]> {
-  const res = await fetch(`${API_BASE_URL}/api/agents`);
-  if (!res.ok) throw new Error(`Backend API ${res.status}: ${API_BASE_URL}/api/agents`);
-  const data: unknown = await res.json();
-  const d = data as Record<string, unknown>;
-  return (d.agents ?? d.items ?? (Array.isArray(data) ? data : [])) as unknown[];
+// ─── Agents ────────────────────────────────────────────────────────────────
+
+export async function fetchAgentsFromBackend(): Promise<Agent[]> {
+  const data = (await apiFetch("/api/dashboard")) as Record<string, unknown>;
+  const agents = (data.onlineAgents ?? []) as object[];
+  return agents.map(mapAgent);
+}
+
+// ─── Quest detail sub-resources ───────────────────────────────────────────
+
+export async function fetchQuestMessagesFromBackend(questId: string): Promise<unknown[]> {
+  const data = (await apiFetch(`/api/tasks/${questId}/messages`)) as Record<string, unknown>;
+  return (data.messages ?? (Array.isArray(data) ? data : [])) as unknown[];
+}
+
+export async function fetchQuestActivityFromBackend(questId: string): Promise<unknown[]> {
+  const data = (await apiFetch(`/api/tasks/${questId}/activity`)) as Record<string, unknown>;
+  return (data.events ?? data.items ?? (Array.isArray(data) ? data : [])) as unknown[];
+}
+
+export async function fetchQuestArtifactsFromBackend(questId: string): Promise<unknown[]> {
+  const data = (await apiFetch(`/api/tasks/${questId}/artifacts`)) as Record<string, unknown>;
+  return (data.artifacts ?? (Array.isArray(data) ? data : [])) as unknown[];
 }

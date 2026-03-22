@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { useQuests } from '../lib/useQuests';
-import { getAgentById } from '../data/mock';
+import { useAgents } from '../lib/useAgents';
 import PageHeader from '../components/shared/PageHeader';
 import StatusBadge from '../components/shared/StatusBadge';
 import PriorityTag from '../components/shared/PriorityTag';
@@ -29,6 +29,7 @@ export default function Quests() {
   const [search, setSearch] = useState('');
   const [showNewQuest, setShowNewQuest] = useState(false);
   const { quests, loading, refresh } = useQuests();
+  const { agents } = useAgents();
 
   const filtered = quests.filter(q => {
     if (filter !== 'all' && q.status !== filter) return false;
@@ -96,7 +97,7 @@ export default function Quests() {
         ) : (
           <div className="divide-y divide-white/[0.04]">
             {filtered.map(quest => {
-              const agent = quest.agent ?? getAgentById(quest.agent_id);
+              const agent = agents.find(a => a.id === quest.agent_id);
               return (
                 <button
                   key={quest.id}
