@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, SlidersHorizontal } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useQuests } from '../lib/useQuests';
 import { useAgents } from '../lib/useAgents';
+import { deleteQuest } from '../lib/missionControlApi';
 import PageHeader from '../components/shared/PageHeader';
 import StatusBadge from '../components/shared/StatusBadge';
 import PriorityTag from '../components/shared/PriorityTag';
@@ -120,6 +121,17 @@ export default function Quests() {
                       <span className="text-2xs text-surface-500 mt-0.5 block text-right">{quest.progress}%</span>
                     </div>
                     <TimeAgo date={quest.updated_at} className="w-14 text-right" />
+                    <button
+                      className="p-1.5 rounded text-surface-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      title="Quest löschen"
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (!confirm(`Quest "${quest.title}" wirklich löschen?`)) return;
+                        deleteQuest(quest.id).then(() => refresh()).catch(() => alert('Löschen fehlgeschlagen.'));
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 </button>
               );

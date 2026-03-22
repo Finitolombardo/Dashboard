@@ -250,34 +250,72 @@ export async function applyQuestAction(questId: string, action: string, reviewNo
 export type OperatorIntent =
   | { type: 'create_quest'; title: string }
   | { type: 'start_quest' }
+  | { type: 'close_quest' }
+  | { type: 'delete_quest' }
+  | { type: 'pause_quest' }
+  | { type: 'resume_quest' }
+  | { type: 'archive_quest' }
+  | { type: 'restart_quest' }
   | { type: 'delegate'; agent: string }
   | { type: 'message' };
 
 export function parseOperatorIntent(content: string): OperatorIntent {
-  const trimmed = content.trim();
-  const lower = trimmed.toLowerCase();
+  const lower = content.trim().toLowerCase();
 
-  // Create quest: flexible matching — must contain "erstell"/"neue"/"mach" + "quest"
-  // Title extraction: after "namens", "namen", or after last "quest" keyword
+  // Close/Complete quest
+  if (/(?:schlie[sß]|beende|abschlie[sß]|fertig|close|complete).*quest/i.test(lower)
+      || /quest.*(?:schlie[sß]|beende|abschlie[sß]|fertig|close|complete)/i.test(lower)) {
+    return { type: 'close_quest' };
+  }
+
+  // Delete quest
+  if (/(?:l[oö]sch|entfern|delete|remove).*quest/i.test(lower)
+      || /quest.*(?:l[oö]sch|entfern|delete|remove)/i.test(lower)) {
+    return { type: 'delete_quest' };
+  }
+
+  // Pause quest
+  if (/(?:pausier|halt|stopp|pause).*quest/i.test(lower)
+      || /quest.*(?:pausier|halt|stopp|pause)/i.test(lower)) {
+    return { type: 'pause_quest' };
+  }
+
+  // Resume quest
+  if (/(?:fortsetze|weitermach|resume|fortfahr).*quest/i.test(lower)
+      || /quest.*(?:fortsetze|weitermach|resume|fortfahr)/i.test(lower)) {
+    return { type: 'resume_quest' };
+  }
+
+  // Archive quest
+  if (/(?:archivier|archive).*quest/i.test(lower)
+      || /quest.*(?:archivier|archive)/i.test(lower)) {
+    return { type: 'archive_quest' };
+  }
+
+  // Restart quest
+  if (/(?:neustart|restart|neu\s+starten).*quest/i.test(lower)
+      || /quest.*(?:neustart|restart|neu\s+starten)/i.test(lower)) {
+    return { type: 'restart_quest' };
+  }
+
+  // Create quest (must come AFTER close/delete/pause etc. to avoid false matches)
   if (/(?:erstell|neue[srn]?\s+quest|mach.*quest)/i.test(lower) && /quest/i.test(lower)) {
-    // Try extracting title after "namens/namen"
+    const trimmed = content.trim();
     const nameMatch = trimmed.match(/(?:namens|namen)\s+["']?(.+?)["']?\s*$/i);
     if (nameMatch) return { type: 'create_quest', title: nameMatch[1].trim() };
-    // Try extracting title after the last occurrence of "quest"
     const afterQuest = trimmed.match(/quest\s+["']?([A-Z\u00C0-\u024F].+?)["']?\s*$/i);
     if (afterQuest) return { type: 'create_quest', title: afterQuest[1].trim() };
-    // Fallback: use everything after "quest" keywords
     const fallback = trimmed.match(/quest\s+(.+?)\s*$/i);
     if (fallback) return { type: 'create_quest', title: fallback[1].trim() };
   }
 
-  // "Starte die Quest" / "Quest starten"
+  // Start quest
   if (/(?:starte?\s+(?:die\s+)?quest|quest\s+starten)/i.test(lower)) {
     return { type: 'start_quest' };
   }
 
-  // "Delegiere an X" / "Weise X zu"
-  const delegateMatch = trimmed.match(
+  // Delegate
+  const delegateMatch = content.trim().match(
     /(?:delegiere?\s+an|weise\s+(?:an\s+)?|zuweisen\s+an?)\s*["']?(\w+)["']?\s*$/i
   );
   if (delegateMatch) return { type: 'delegate', agent: delegateMatch[1].trim().toLowerCase() };
@@ -289,7 +327,7 @@ export function parseOperatorIntent(content: string): OperatorIntent {
 export async function executeOperatorIntent(
   intent: OperatorIntent,
   questId: string,
-): Promise<{ systemMessage: string; newQuestId?: string }> {
+): Promise<{ systemMessage: string; newQuestId?: string; deleted?: boolean }> {
   switch (intent.type) {
     case 'create_quest': {
       const newQuest = await createQuestFromIntake({ title: intent.title });
@@ -302,14 +340,37 @@ export async function executeOperatorIntent(
       const updated = await applyQuestAction(questId, 'start');
       return { systemMessage: `Quest gestartet. Status: ${updated.status}` };
     }
+    case 'close_quest': {
+      const updated = await applyQuestAction(questId, 'complete');
+      return { systemMessage: `Quest abgeschlossen. Status: ${updated.status}` };
+    }
+    case 'delete_quest': {
+      await deleteQuest(questId);
+      return { systemMessage: `Quest gelöscht.`, deleted: true };
+    }
+    case 'pause_quest': {
+      const updated = await applyQuestAction(questId, 'pause');
+      return { systemMessage: `Quest pausiert. Status: ${updated.status}` };
+    }
+    case 'resume_quest': {
+      const updated = await applyQuestAction(questId, 'resume');
+      return { systemMessage: `Quest fortgesetzt. Status: ${updated.status}` };
+    }
+    case 'archive_quest': {
+      const updated = await applyQuestAction(questId, 'archive');
+      return { systemMessage: `Quest archiviert. Status: ${updated.status}` };
+    }
+    case 'restart_quest': {
+      const updated = await applyQuestAction(questId, 'restart');
+      return { systemMessage: `Quest neu gestartet. Status: ${updated.status}` };
+    }
     case 'delegate': {
       const agentMap: Record<string, string> = {
         archon: 'archon', opencode: 'opencode', archivarius: 'kelthuzad',
         kelthuzad: 'kelthuzad', waechter: 'waechter', wächter: 'waechter',
       };
       const agentId = agentMap[intent.agent] ?? intent.agent;
-      // Delegate via update — use POST /api/tasks with edit action
-      const body = { questId, action: 'edit', delegatedAgentId: agentId };
+      const body = { questId, action: 'delegate_agent', delegatedAgentId: agentId };
       const res = await fetch(`${API_BASE_URL}/api/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -321,6 +382,16 @@ export async function executeOperatorIntent(
     default:
       return { systemMessage: '' };
   }
+}
+
+// Delete a quest via backend action
+export async function deleteQuest(questId: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ questId, action: "delete" }),
+  });
+  if (!res.ok) throw new Error(`DELETE quest failed: ${res.status}`);
 }
 
 // Quest creation: build structured draft, send to create-from-draft (matches live server API)

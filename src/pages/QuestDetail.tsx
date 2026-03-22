@@ -7,7 +7,7 @@ import {
   CheckCircle2,
   RotateCcw,
   Archive,
-  MoreHorizontal,
+  Trash2,
 } from 'lucide-react';
 import {
   fetchQuestDetailFromBackend,
@@ -19,6 +19,7 @@ import {
   getAgentById,
   parseOperatorIntent,
   executeOperatorIntent,
+  deleteQuest,
 } from '../lib/missionControlApi';
 import type { Quest, Message, Event, Artefact } from '../types';
 import StatusBadge from '../components/shared/StatusBadge';
@@ -143,8 +144,24 @@ export default function QuestDetail() {
                 </button>
               </>
             )}
-            <button className="btn-ghost"><Archive size={14} /></button>
-            <button className="btn-ghost"><MoreHorizontal size={14} /></button>
+            <button
+              className="btn-ghost"
+              title="Quest archivieren"
+              onClick={() => {
+                if (!confirm('Quest archivieren?')) return;
+                applyQuestAction(quest.id, 'archive').then(() => navigate('/quests')).catch(() => {});
+              }}
+            ><Archive size={14} /></button>
+            <button
+              className="btn-ghost text-red-400 hover:text-red-300"
+              title="Quest löschen"
+              onClick={() => {
+                if (!confirm('Quest wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) return;
+                deleteQuest(quest.id).then(() => navigate('/quests')).catch(() => {
+                  alert('Löschen fehlgeschlagen. Backend-Update nötig.');
+                });
+              }}
+            ><Trash2 size={14} /></button>
           </div>
         </div>
 
@@ -206,10 +223,19 @@ export default function QuestDetail() {
               const intent = parseOperatorIntent(content);
 
               if (intent.type !== 'message') {
-                // Meta-command: execute system action, post confirmation to thread
+                // Meta-command: execute system action, no dispatch
+                // For delete: confirm first
+                if (intent.type === 'delete_quest') {
+                  if (!confirm('Quest wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) return;
+                }
                 sendQuestMessage(quest.id, content)
                   .then(() => executeOperatorIntent(intent, quest.id))
                   .then(result => {
+                    if (result.deleted) {
+                      // Quest was deleted — navigate back
+                      navigate('/quests');
+                      return;
+                    }
                     // Show system confirmation in chat
                     setMessages(prev => [...prev, {
                       id: `sys-${Date.now()}`,
