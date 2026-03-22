@@ -14,15 +14,12 @@ import NewQuestModal from '../components/quests/NewQuestModal';
 
 const filterTabs: { value: string; label: string }[] = [
   { value: 'active', label: 'Aktiv' },
-  { value: 'all', label: 'Alle' },
-  { value: 'in_progress', label: 'In Bearbeitung' },
-  { value: 'draft', label: 'Entwurf' },
   { value: 'ready', label: 'Bereit' },
-  { value: 'in_review', label: 'In Prüfung' },
-  { value: 'waiting', label: 'Wartend' },
+  { value: 'in_progress', label: 'In Bearbeitung' },
   { value: 'blocked', label: 'Blockiert' },
-  { value: 'paused', label: 'Pausiert' },
+  { value: 'in_review', label: 'In Prüfung' },
   { value: 'done', label: 'Erledigt' },
+  { value: 'all', label: 'Alle' },
 ];
 
 const INACTIVE_STATUSES = ['done', 'archived'];

@@ -10,8 +10,7 @@ interface NewQuestModalProps {
 
 export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps) {
   const [title, setTitle] = useState('');
-  const [goal, setGoal] = useState('');
-  const [scope, setScope] = useState('');
+  const [briefing, setBriefing] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +23,7 @@ export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps
     setError(null);
 
     try {
-      await createQuestFromIntake({ title, goal, scope, priority });
+      await createQuestFromIntake({ title, briefing, priority });
       onCreated?.();
       onClose();
     } catch {
@@ -51,7 +50,7 @@ export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps
             <input
               type="text"
               className="input"
-              placeholder="Quest-Titel eingeben..."
+              placeholder="Kurzer Questname..."
               value={title}
               onChange={e => setTitle(e.target.value)}
               required
@@ -59,24 +58,13 @@ export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps
           </div>
 
           <div>
-            <label className="label">Ziel</label>
-            <input
-              type="text"
-              className="input"
-              placeholder="Was soll erreicht werden?"
-              value={goal}
-              onChange={e => setGoal(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="label">Umfang / Briefing</label>
+            <label className="label">Briefing</label>
             <textarea
               className="input resize-none"
-              rows={3}
-              placeholder="Beschreibung, Kontext, Anforderungen..."
-              value={scope}
-              onChange={e => setScope(e.target.value)}
+              rows={4}
+              placeholder="Arbeitsanweisung, Kontext, Anforderungen..."
+              value={briefing}
+              onChange={e => setBriefing(e.target.value)}
             />
           </div>
 
@@ -87,9 +75,9 @@ export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps
               value={priority}
               onChange={e => setPriority(e.target.value as Priority)}
             >
-              <option value="critical">Kritisch</option>
-              <option value="high">Hoch</option>
               <option value="medium">Mittel</option>
+              <option value="high">Hoch</option>
+              <option value="critical">Kritisch</option>
               <option value="low">Niedrig</option>
             </select>
           </div>

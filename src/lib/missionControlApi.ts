@@ -384,43 +384,49 @@ export async function executeOperatorIntent(
   }
 }
 
-// Delete a quest via backend action
+// Delete a quest: try real delete first, fall back to archive if not deployed yet
 export async function deleteQuest(questId: string): Promise<void> {
+  // Try real delete action first
   const res = await fetch(`${API_BASE_URL}/api/tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ questId, action: "delete" }),
   });
-  if (!res.ok) throw new Error(`DELETE quest failed: ${res.status}`);
+  if (res.ok) return;
+  // Fallback: archive (functionally removes from active views)
+  const archiveRes = await fetch(`${API_BASE_URL}/api/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ questId, action: "archive" }),
+  });
+  if (!archiveRes.ok) throw new Error(`Archive fallback failed: ${archiveRes.status}`);
 }
 
-// Quest creation: build structured draft, send to create-from-draft (matches live server API)
+// Quest creation: build structured draft → create-from-draft → auto-assign OpenCode
 export async function createQuestFromIntake(opts: {
   title: string;
-  goal?: string;
-  scope?: string;
+  briefing?: string;
   priority?: string;
 }): Promise<Quest> {
   const title = opts.title.trim();
-  const goal = opts.goal?.trim() || title;
-  const scope = opts.scope?.trim() || "";
+  const briefing = opts.briefing?.trim() || "";
   const priorityMap: Record<string, number> = { critical: 1, high: 2, medium: 3, low: 4 };
   const priority = priorityMap[opts.priority ?? "medium"] ?? 3;
 
   const draft = {
     id: `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     title,
-    goal,
-    rationale: scope || "Quest aus Mission Control UI erstellt.",
+    goal: briefing || title,
+    rationale: briefing || "Quest aus Mission Control UI erstellt.",
     priority,
-    assignedAgentId: "archon",
-    assignedRole: "Koordination",
-    nextAction: "Scope prüfen und Quest starten.",
+    assignedAgentId: "opencode",
+    assignedRole: "Server Coding Agent",
+    nextAction: "Briefing lesen und Quest bearbeiten.",
     subtasks: [],
     parentQuestId: undefined,
     relatedQuestIds: [],
     sourceType: "manual",
-    sourceContextSummary: scope,
+    sourceContextSummary: briefing,
     ambiguityFlags: [],
     createdAt: new Date().toISOString(),
   };
@@ -428,7 +434,7 @@ export async function createQuestFromIntake(opts: {
   const createRes = await fetch(`${API_BASE_URL}/api/tasks/create-from-draft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ draft, confirmCreate: true, delegateAgentId: "archon" }),
+    body: JSON.stringify({ draft, confirmCreate: true, delegateAgentId: "opencode" }),
   });
   if (!createRes.ok) throw new Error(`POST /api/tasks/create-from-draft: ${createRes.status}`);
   const createData = (await createRes.json()) as Record<string, unknown>;

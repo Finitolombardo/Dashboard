@@ -44,18 +44,28 @@ export default function QuestDetail() {
   const [quest, setQuest] = useState<Quest | null | undefined>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
   const [artefacts, setArtefacts] = useState<Artefact[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) { setQuest(null); return; }
+    setLoadError(null);
     fetchQuestDetailFromBackend(id)
       .then(q => {
+        if (!q || !q.id) {
+          setQuest(null);
+          setLoadError('Quest-Daten unvollständig.');
+          return;
+        }
         setQuest(q);
         fetchQuestMessagesFromBackend(id).then(setMessages).catch(() => {});
         fetchQuestArtifactsFromBackend(id)
           .then(setArtefacts)
           .catch(() => {});
       })
-      .catch(() => setQuest(null));
+      .catch(err => {
+        setQuest(null);
+        setLoadError(err?.message || 'Laden fehlgeschlagen');
+      });
   }, [id]);
 
   // Poll messages while quest is active
@@ -90,8 +100,11 @@ export default function QuestDetail() {
 
   if (!quest) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <p className="text-sm text-surface-500">Quest nicht gefunden</p>
+      <div className="h-screen flex flex-col items-center justify-center gap-3">
+        <p className="text-sm text-surface-500">{loadError || 'Quest nicht gefunden'}</p>
+        <button onClick={() => navigate('/quests')} className="btn-ghost text-xs">
+          ← Zurück zu Quests
+        </button>
       </div>
     );
   }
