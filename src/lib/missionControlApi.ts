@@ -46,7 +46,7 @@ function mapQuest(raw: any): Quest {
     goal: raw.goal ?? raw.description ?? raw.summary ?? "",
     scope: "",
     status: mapStatus(raw.status),
-    priority: mapPriority(raw.urgency ?? raw.priority),
+    priority: mapPriority(raw.priority),
     agent_id: raw.assignedAgentId ?? null,
     current_step: (op.lastStep ?? raw.currentSubtask ?? "").slice(0, 200),
     next_step: raw.nextStep ?? raw.nextAction ?? "",
@@ -438,6 +438,24 @@ export async function createQuestFromIntake(opts: {
   });
   if (!createRes.ok) throw new Error(`POST /api/tasks/create-from-draft: ${createRes.status}`);
   const createData = (await createRes.json()) as Record<string, unknown>;
-  const raw = createData.quest ?? createData;
-  return mapQuest(raw);
+  const questRaw = (createData.quest ?? createData) as Record<string, unknown>;
+  const questId = questRaw.id as string;
+
+  // Auto-activate: approve → start → quest is "In Arbeit" (Aktiv)
+  await fetch(`${API_BASE_URL}/api/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ questId, action: "approve" }),
+  }).catch(() => {});
+  const startRes = await fetch(`${API_BASE_URL}/api/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ questId, action: "start" }),
+  });
+  if (startRes.ok) {
+    const startData = (await startRes.json()) as Record<string, unknown>;
+    const started = startData.quest ?? questRaw;
+    return mapQuest(started);
+  }
+  return mapQuest(questRaw);
 }

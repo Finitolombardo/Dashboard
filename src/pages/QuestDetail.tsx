@@ -45,6 +45,7 @@ export default function QuestDetail() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [artefacts, setArtefacts] = useState<Artefact[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (!id) { setQuest(null); return; }
@@ -112,7 +113,6 @@ export default function QuestDetail() {
   const agent = getAgentById(quest.agent_id);
   const events: Event[] = [];
   const hasAgentWork = messages.some(m => m.sender_type === 'agent') || quest.progress > 0;
-  const [isProcessing, setIsProcessing] = useState(false);
 
   return (
     <div className="h-screen flex flex-col">

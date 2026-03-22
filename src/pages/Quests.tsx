@@ -83,7 +83,9 @@ export default function Quests() {
               {tab.label}
               {tab.value !== 'all' && (
                 <span className="ml-1.5 text-2xs opacity-60">
-                  {quests.filter(q => q.status === tab.value).length}
+                  {tab.value === 'active'
+                    ? quests.filter(q => !INACTIVE_STATUSES.includes(q.status)).length
+                    : quests.filter(q => q.status === tab.value).length}
                 </span>
               )}
             </button>
