@@ -17,6 +17,8 @@ import {
   dispatchQuest,
   applyQuestAction,
   getAgentById,
+  parseOperatorIntent,
+  executeOperatorIntent,
 } from '../lib/missionControlApi';
 import type { Quest, Message, Event, Artefact } from '../types';
 import StatusBadge from '../components/shared/StatusBadge';
@@ -91,6 +93,7 @@ export default function QuestDetail() {
 
   const agent = getAgentById(quest.agent_id);
   const events: Event[] = [];
+  const hasAgentWork = messages.some(m => m.sender_type === 'agent') || quest.progress > 0;
 
   return (
     <div className="h-screen flex flex-col">
@@ -121,8 +124,14 @@ export default function QuestDetail() {
             {quest.status === 'in_review' && (
               <>
                 <button
-                  className="btn-primary"
-                  onClick={() => applyQuestAction(quest.id, 'review_accept').then(setQuest).catch(() => {})}
+                  className={hasAgentWork ? 'btn-primary' : 'btn-ghost opacity-50 cursor-not-allowed'}
+                  disabled={!hasAgentWork}
+                  title={hasAgentWork ? 'Quest als erledigt freigeben' : 'Keine Agent-Arbeit vorhanden — Freigabe nicht möglich'}
+                  onClick={() => {
+                    if (!hasAgentWork) return;
+                    if (!confirm('Quest wirklich als erledigt freigeben?')) return;
+                    applyQuestAction(quest.id, 'review_accept').then(setQuest).catch(() => {});
+                  }}
                 >
                   <CheckCircle2 size={14} /> Freigeben
                 </button>
@@ -182,31 +191,66 @@ export default function QuestDetail() {
             messages={messages}
             events={events}
             onSend={content => {
-              const localId = `local-${Date.now()}`;
-              // Optimistic render
+              const now = new Date().toISOString();
+              // Optimistic operator message
               setMessages(prev => [...prev, {
-                id: localId,
+                id: `local-${Date.now()}`,
                 quest_id: quest.id,
                 sender_type: 'operator' as const,
                 sender_name: 'Operator',
                 content,
                 message_type: 'message' as const,
-                created_at: new Date().toISOString(),
+                created_at: now,
               }]);
-              // Send to backend, refetch messages to confirm persistence, then dispatch
-              sendQuestMessage(quest.id, content)
-                .then(() => fetchQuestMessagesFromBackend(quest.id))
-                .then(serverMsgs => {
-                  // Merge: keep local optimistic messages that aren't on server yet
-                  setMessages(prev => {
-                    const serverIds = new Set(serverMsgs.map(m => m.id));
-                    const localOnly = prev.filter(m => m.id.startsWith('local-') && !serverIds.has(m.id));
-                    return [...serverMsgs, ...localOnly];
+
+              const intent = parseOperatorIntent(content);
+
+              if (intent.type !== 'message') {
+                // Meta-command: execute system action, post confirmation to thread
+                sendQuestMessage(quest.id, content)
+                  .then(() => executeOperatorIntent(intent, quest.id))
+                  .then(result => {
+                    // Show system confirmation in chat
+                    setMessages(prev => [...prev, {
+                      id: `sys-${Date.now()}`,
+                      quest_id: quest.id,
+                      sender_type: 'system' as const,
+                      sender_name: 'Archon',
+                      content: result.systemMessage,
+                      message_type: 'status' as const,
+                      created_at: new Date().toISOString(),
+                    }]);
+                    // Persist the system message
+                    sendQuestMessage(quest.id, `[Archon] ${result.systemMessage}`);
+                    // Refresh quest state
+                    fetchQuestDetailFromBackend(quest.id).then(setQuest);
+                  })
+                  .catch(err => {
+                    setMessages(prev => [...prev, {
+                      id: `err-${Date.now()}`,
+                      quest_id: quest.id,
+                      sender_type: 'system' as const,
+                      sender_name: 'System',
+                      content: `Fehler: ${err?.message || 'Aktion fehlgeschlagen'}`,
+                      message_type: 'status' as const,
+                      created_at: new Date().toISOString(),
+                    }]);
                   });
-                })
-                .then(() => dispatchQuest(quest.id))
-                .then(() => fetchQuestDetailFromBackend(quest.id).then(setQuest))
-                .catch(() => {});
+              } else {
+                // Regular message: send to thread + dispatch to agent
+                sendQuestMessage(quest.id, content)
+                  .then(() => fetchQuestMessagesFromBackend(quest.id))
+                  .then(serverMsgs => {
+                    setMessages(prev => {
+                      const serverIds = new Set(serverMsgs.map(m => m.id));
+                      const localOnly = prev.filter(m => m.id.startsWith('local-') && !serverIds.has(m.id));
+                      return [...serverMsgs, ...localOnly];
+                    });
+                  })
+                  .then(() => dispatchQuest(quest.id))
+                  .then(() => fetchQuestDetailFromBackend(quest.id).then(setQuest))
+                  .catch(() => {});
+              }
             }}
           />
         )}

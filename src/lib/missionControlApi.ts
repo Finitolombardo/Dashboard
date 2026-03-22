@@ -242,6 +242,75 @@ export async function applyQuestAction(questId: string, action: string, reviewNo
   return mapQuest(raw);
 }
 
+// ─── Operator intent parsing ──────────────────────────────────────────────
+
+export type OperatorIntent =
+  | { type: 'create_quest'; title: string }
+  | { type: 'start_quest' }
+  | { type: 'delegate'; agent: string }
+  | { type: 'message' };
+
+export function parseOperatorIntent(content: string): OperatorIntent {
+  const trimmed = content.trim();
+
+  // "Erstelle (eine) Quest (namens) X" / "Neue Quest X" / "Mach eine Quest X"
+  const createMatch = trimmed.match(
+    /^(?:erstell[e]?\s+(?:eine\s+)?quest\s+(?:namens\s+)?|neue\s+quest\s+|mach\s+(?:eine\s+)?quest\s+)["']?(.+?)["']?\s*$/i
+  );
+  if (createMatch) return { type: 'create_quest', title: createMatch[1].trim() };
+
+  // "Starte die Quest" / "Quest starten"
+  if (/^(?:starte?\s+(?:die\s+)?quest|quest\s+starten)\s*$/i.test(trimmed)) {
+    return { type: 'start_quest' };
+  }
+
+  // "Delegiere an X" / "Weise X zu"
+  const delegateMatch = trimmed.match(
+    /^(?:delegiere?\s+an\s+|weise?\s+(?:an\s+)?|zuweisen\s+an?\s*)["']?(\w+)["']?\s*$/i
+  );
+  if (delegateMatch) return { type: 'delegate', agent: delegateMatch[1].trim().toLowerCase() };
+
+  return { type: 'message' };
+}
+
+// Execute an operator intent and return a system message for the quest thread
+export async function executeOperatorIntent(
+  intent: OperatorIntent,
+  questId: string,
+): Promise<{ systemMessage: string; newQuestId?: string }> {
+  switch (intent.type) {
+    case 'create_quest': {
+      const newQuest = await createQuestFromIntake({ title: intent.title });
+      return {
+        systemMessage: `Neue Quest "${intent.title}" erstellt (ID: ${newQuest.id}).`,
+        newQuestId: newQuest.id,
+      };
+    }
+    case 'start_quest': {
+      const updated = await applyQuestAction(questId, 'start');
+      return { systemMessage: `Quest gestartet. Status: ${updated.status}` };
+    }
+    case 'delegate': {
+      const agentMap: Record<string, string> = {
+        archon: 'archon', opencode: 'opencode', archivarius: 'kelthuzad',
+        kelthuzad: 'kelthuzad', waechter: 'waechter', wächter: 'waechter',
+      };
+      const agentId = agentMap[intent.agent] ?? intent.agent;
+      // Delegate via update — use POST /api/tasks with edit action
+      const body = { questId, action: 'edit', delegatedAgentId: agentId };
+      const res = await fetch(`${API_BASE_URL}/api/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`Delegation failed: ${res.status}`);
+      return { systemMessage: `Quest an ${intent.agent} delegiert.` };
+    }
+    default:
+      return { systemMessage: '' };
+  }
+}
+
 // Quest creation: build structured draft, send to create-from-draft (matches live server API)
 export async function createQuestFromIntake(opts: {
   title: string;
