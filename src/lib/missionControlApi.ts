@@ -12,6 +12,7 @@ function mapStatus(backendStatus: string): QuestStatus {
     Blockiert: "blocked",
     Pruefung: "in_review",
     Erledigt: "done",
+    Abgeschlossen: "done",
     Archiviert: "archived",
     Pausiert: "paused",
     Wartend: "waiting",
@@ -38,17 +39,18 @@ function mapAgentStatus(s: string | undefined): AgentStatus {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapQuest(raw: any): Quest {
   const op = raw.operationalState ?? {};
+  const handoffText: string = op.handoff?.humanActionRequired ?? "";
   return {
     id: raw.id,
     title: raw.title ?? "",
     goal: raw.goal ?? raw.description ?? raw.summary ?? "",
     scope: "",
     status: mapStatus(raw.status),
-    priority: mapPriority(raw.priority),
+    priority: mapPriority(raw.urgency ?? raw.priority),
     agent_id: raw.assignedAgentId ?? null,
     current_step: (op.lastStep ?? raw.currentSubtask ?? "").slice(0, 200),
     next_step: raw.nextStep ?? raw.nextAction ?? "",
-    blocker: raw.blockedReason ?? raw.missingInput ?? "",
+    blocker: raw.blockedReason ?? raw.missingInput ?? handoffText,
     progress: typeof raw.progress === "number" ? raw.progress : 0,
     linked_workflow_id: null,
     linked_campaign_id: null,
@@ -97,10 +99,27 @@ export async function fetchQuestsFromBackend(): Promise<Quest[]> {
 
 // ─── Agents ────────────────────────────────────────────────────────────────
 
+const OPERATIVE_AGENTS: Omit<Agent, "status" | "workload" | "created_at" | "updated_at">[] = [
+  { id: "archon",     name: "Archon",      role: "Koordination & Steuerung",  capabilities: "Koordination, Planung, Delegation",                      current_model: "–" },
+  { id: "opencode",   name: "OpenCode",    role: "Server Coding Agent",       capabilities: "Code-Generierung, Bug-Fixes, Server-seitige Automatisierung", current_model: "–" },
+  { id: "kelthuzad",  name: "Archivarius", role: "Knowledge & Playbooks",     capabilities: "Dokumentation, Playbooks, Wissensmanagement",             current_model: "–" },
+  { id: "waechter",   name: "Wächter",     role: "Review & QA",               capabilities: "Code-Review, Testing, Compliance",                        current_model: "–" },
+];
+
 export async function fetchAgentsFromBackend(): Promise<Agent[]> {
-  const data = (await apiFetch("/api/dashboard")) as Record<string, unknown>;
-  const agents = (data.onlineAgents ?? []) as object[];
-  return agents.map(mapAgent);
+  // Derive agent activity from quest assignments — no separate /api/dashboard call needed.
+  const quests = await fetchQuestsFromBackend();
+  const activeIds = new Set(
+    quests.filter(q => !["done", "archived"].includes(q.status)).map(q => q.agent_id)
+  );
+  const now = new Date().toISOString();
+  return OPERATIVE_AGENTS.map(a => ({
+    ...a,
+    status: activeIds.has(a.id) ? ("working" as const) : ("idle" as const),
+    workload: 0,
+    created_at: now,
+    updated_at: now,
+  }));
 }
 
 // ─── Quest detail sub-resources ───────────────────────────────────────────

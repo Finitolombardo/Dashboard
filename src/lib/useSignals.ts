@@ -10,27 +10,16 @@ export function useSignals(quests: Quest[]): Signal[] {
     const signals: Signal[] = [];
 
     for (const quest of quests) {
-      const op = (quest as unknown as Record<string, unknown>).operationalState as
-        | Record<string, unknown>
-        | undefined;
-
-      const opStatus = (op?.status as string | undefined) ?? '';
-      const waitMinutes = (quest as unknown as Record<string, unknown>).waitMinutes as
-        | number
-        | undefined;
-
-      // Review required
-      if (opStatus === 'review_required') {
+      // in_review = Pruefung/review lane → operator review required
+      if (quest.status === 'in_review') {
         signals.push({
           id: `sig-review-${quest.id}`,
           type: 'approval',
           title: `${quest.title} – Prüfung erforderlich`,
-          summary:
-            (op?.humanActionRequired as string | undefined) ??
-            'Quest wartet auf Operator-Review.',
-          severity: waitMinutes && waitMinutes > 120 ? 'high' : 'medium',
+          summary: quest.blocker || 'Quest wartet auf Operator-Review.',
+          severity: quest.priority === 'critical' ? 'critical' : 'medium',
           status: 'open',
-          source: (quest.agent_id ?? 'System'),
+          source: quest.agent_id ?? 'System',
           linked_quest_id: quest.id,
           linked_workflow_id: null,
           linked_session_id: null,
@@ -40,8 +29,8 @@ export function useSignals(quests: Quest[]): Signal[] {
         continue;
       }
 
-      // Blocked
-      if (quest.status === 'blocked' || opStatus === 'blocked') {
+      // blocked → blocker signal
+      if (quest.status === 'blocked') {
         signals.push({
           id: `sig-block-${quest.id}`,
           type: 'blocker',
@@ -59,15 +48,13 @@ export function useSignals(quests: Quest[]): Signal[] {
         continue;
       }
 
-      // Approval / manual required
-      if (opStatus === 'approval_required' || opStatus === 'manual_required') {
+      // waiting = needs_input lane → agent question
+      if (quest.status === 'waiting') {
         signals.push({
-          id: `sig-approval-${quest.id}`,
+          id: `sig-wait-${quest.id}`,
           type: 'agent_question',
           title: `${quest.title} – Entscheidung benötigt`,
-          summary:
-            (op?.humanActionRequired as string | undefined) ??
-            'Agent wartet auf Operator-Entscheidung.',
+          summary: quest.blocker || 'Agent wartet auf Operator-Entscheidung.',
           severity: 'medium',
           status: 'open',
           source: quest.agent_id ?? 'System',
