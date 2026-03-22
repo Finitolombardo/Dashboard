@@ -242,7 +242,7 @@ export async function applyQuestAction(questId: string, action: string, reviewNo
   return mapQuest(raw);
 }
 
-// Single-step quest creation from operator text
+// Two-step quest creation: draft → create-from-draft (matches live server API)
 export async function createQuestFromIntake(opts: {
   title: string;
   goal?: string;
@@ -253,13 +253,26 @@ export async function createQuestFromIntake(opts: {
     opts.goal?.trim() ? `Ziel: ${opts.goal.trim()}` : "",
     opts.scope?.trim() ? `Umfang: ${opts.scope.trim()}` : "",
   ].filter(Boolean);
-  const res = await fetch(`${API_BASE_URL}/api/tasks/intake`, {
+
+  // Step 1: Create draft
+  const draftRes = await fetch(`${API_BASE_URL}/api/tasks/draft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ input: lines.join("\n"), intakeSource: "manual", actorName: "Mission Control UI" }),
+    body: JSON.stringify({ input: lines.join("\n") }),
   });
-  if (!res.ok) throw new Error(`POST /api/tasks/intake: ${res.status}`);
-  const data = (await res.json()) as Record<string, unknown>;
-  const raw = data.quest ?? data;
+  if (!draftRes.ok) throw new Error(`POST /api/tasks/draft: ${draftRes.status}`);
+  const draftData = (await draftRes.json()) as Record<string, unknown>;
+  const draft = draftData.draft;
+  if (!draft) throw new Error("Draft response missing draft object");
+
+  // Step 2: Create quest from draft
+  const createRes = await fetch(`${API_BASE_URL}/api/tasks/create-from-draft`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ draft, confirmCreate: true }),
+  });
+  if (!createRes.ok) throw new Error(`POST /api/tasks/create-from-draft: ${createRes.status}`);
+  const createData = (await createRes.json()) as Record<string, unknown>;
+  const raw = createData.quest ?? createData;
   return mapQuest(raw);
 }
