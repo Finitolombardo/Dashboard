@@ -189,6 +189,23 @@ export async function fetchQuestMessagesFromBackend(questId: string): Promise<Me
   return (items as object[]).map(raw => mapMessage(raw, questId));
 }
 
+export async function fetchQuestEventsFromBackend(questId: string): Promise<import('../types').Event[]> {
+  try {
+    const data = (await apiFetch(`/api/tasks/${questId}/activity`)) as Record<string, unknown>;
+    const items = data.items ?? (Array.isArray(data) ? data : []);
+    return (items as any[]).map(raw => ({
+      id: raw.id ?? String(Math.random()),
+      quest_id: questId,
+      type: raw.eventType ?? raw.type ?? raw.activityType ?? "unknown",
+      description: raw.summary ?? raw.label ?? raw.description ?? "",
+      actor: raw.actorName ?? raw.actor ?? "System",
+      created_at: raw.createdAt ?? raw.created_at ?? new Date().toISOString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchQuestArtifactsFromBackend(questId: string): Promise<Artefact[]> {
   const data = (await apiFetch(`/api/tasks/${questId}/artifacts`)) as Record<string, unknown>;
   const items = data.artifacts ?? (Array.isArray(data) ? data : []);

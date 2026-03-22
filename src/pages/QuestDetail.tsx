@@ -13,6 +13,7 @@ import {
   fetchQuestDetailFromBackend,
   fetchQuestMessagesFromBackend,
   fetchQuestArtifactsFromBackend,
+  fetchQuestEventsFromBackend,
   sendQuestMessage,
   dispatchQuest,
   applyQuestAction,
@@ -44,6 +45,7 @@ export default function QuestDetail() {
   const [quest, setQuest] = useState<Quest | null | undefined>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
   const [artefacts, setArtefacts] = useState<Artefact[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -59,9 +61,8 @@ export default function QuestDetail() {
         }
         setQuest(q);
         fetchQuestMessagesFromBackend(id).then(setMessages).catch(() => {});
-        fetchQuestArtifactsFromBackend(id)
-          .then(setArtefacts)
-          .catch(() => {});
+        fetchQuestArtifactsFromBackend(id).then(setArtefacts).catch(() => {});
+        fetchQuestEventsFromBackend(id).then(setEvents).catch(() => {});
       })
       .catch(err => {
         setQuest(null);
@@ -86,6 +87,7 @@ export default function QuestDetail() {
         }
       }).catch(() => {});
       fetchQuestDetailFromBackend(id).then(setQuest).catch(() => {});
+      fetchQuestEventsFromBackend(id).then(setEvents).catch(() => {});
     }, 5000);
     return () => clearInterval(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,7 +113,6 @@ export default function QuestDetail() {
   }
 
   const agent = getAgentById(quest.agent_id);
-  const events: Event[] = [];
   const hasAgentWork = messages.some(m => m.sender_type === 'agent') || quest.progress > 0;
 
   return (

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Cpu, HelpCircle, CheckCircle2, Package } from 'lucide-react';
+import { Send, Bot, User, Cpu, HelpCircle, CheckCircle2, Package, AlertTriangle, UserPlus, BookOpen } from 'lucide-react';
 import type { Quest, Message, Event, Agent } from '../../types';
 import TimeAgo from '../shared/TimeAgo';
 
@@ -149,6 +149,12 @@ export default function QuestWork({ quest, messages, events, agent, isProcessing
 function MessageBubble({ message }: { message: Message }) {
   const isOperator = message.sender_type === 'operator';
   const isSystem = message.sender_type === 'system';
+  const isEvent = message.message_type === 'event';
+
+  // Dispatch lifecycle events get special rendering
+  if (isEvent || (isSystem && message.message_type === 'event')) {
+    return <DispatchEventBubble message={message} />;
+  }
 
   const Icon = isOperator ? User : isSystem ? Cpu : Bot;
 
@@ -192,6 +198,51 @@ function MessageBubble({ message }: { message: Message }) {
           {message.content}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Renders dispatch lifecycle events with contextual icons and colors. */
+function DispatchEventBubble({ message }: { message: Message }) {
+  const content = message.content.toLowerCase();
+
+  let Icon = Cpu;
+  let colorClass = 'text-surface-400';
+  let bgClass = 'bg-surface-900/50 border-surface-700/50';
+
+  if (content.includes('beigetreten') || content.includes('übernommen')) {
+    Icon = UserPlus;
+    colorClass = 'text-emerald-400';
+    bgClass = 'bg-emerald-500/5 border-emerald-500/20';
+  } else if (content.includes('fehlgeschlagen') || content.includes('blockiert')) {
+    Icon = AlertTriangle;
+    colorClass = 'text-red-400';
+    bgClass = 'bg-red-500/5 border-red-500/20';
+  } else if (content.includes('angefordert') || content.includes('warte')) {
+    Icon = Cpu;
+    colorClass = 'text-amber-400';
+    bgClass = 'bg-amber-500/5 border-amber-500/20';
+  } else if (content.includes('abgeschlossen')) {
+    Icon = CheckCircle2;
+    colorClass = 'text-emerald-400';
+    bgClass = 'bg-emerald-500/5 border-emerald-500/20';
+  } else if (content.includes('playbook') || content.includes('archivarius')) {
+    Icon = BookOpen;
+    colorClass = 'text-blue-400';
+    bgClass = 'bg-blue-500/5 border-blue-500/20';
+  } else if (content.includes('analyse') || content.includes('verbesserung')) {
+    Icon = BookOpen;
+    colorClass = 'text-violet-400';
+    bgClass = 'bg-violet-500/5 border-violet-500/20';
+  }
+
+  return (
+    <div className={`flex items-start gap-2 px-3 py-2.5 rounded border ${bgClass}`}>
+      <Icon size={14} className={`flex-shrink-0 mt-0.5 ${colorClass}`} />
+      <div className="flex-1 min-w-0">
+        <span className="text-xs text-surface-200">{message.content}</span>
+      </div>
+      <TimeAgo date={message.created_at} className="flex-shrink-0" />
     </div>
   );
 }
