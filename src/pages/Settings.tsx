@@ -3,7 +3,7 @@ import PageHeader from '../components/shared/PageHeader';
 import { API_BASE_URL, FRONTEND_URL, AGENT_CHAT_URL, LEGACY_URL } from '../lib/config';
 
 export default function Settings() {
-  const runtimeConfigured = !!import.meta.env.VITE_API_BASE_URL;
+  const backendConfigured = !!import.meta.env.VITE_API_BASE_URL;
   const supabaseConfigured = !!(
     import.meta.env.VITE_SUPABASE_URL &&
     import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -27,10 +27,10 @@ export default function Settings() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-medium text-surface-200">Systemverbindung</h3>
-                {runtimeConfigured ? (
+                {backendConfigured ? (
                   <span className="flex items-center gap-1 text-2xs text-success-400 border border-success-500/20 bg-success-500/10 rounded px-1.5 py-0.5">
                     <CheckCircle size={10} />
-                    Runtime aktiv
+                    Backend-API aktiv
                   </span>
                 ) : supabaseConfigured ? (
                   <span className="text-2xs text-gold-400 border border-gold-500/20 bg-gold-500/10 rounded px-1.5 py-0.5">
@@ -51,15 +51,15 @@ export default function Settings() {
                   active
                 />
                 <UrlRow
-                  label="Operative Runtime"
+                  label="Backend / API"
                   url={API_BASE_URL}
                   tag="Quest-SoT"
-                  active={runtimeConfigured}
+                  active={backendConfigured}
                 />
                 <UrlRow
-                  label="Quest-Ansicht (Runtime-UI)"
+                  label="Quest-Ansicht (Backend)"
                   url={`${API_BASE_URL}/tasks`}
-                  tag="kein Frontend"
+                  tag="nur API-Ansicht"
                 />
                 <UrlRow
                   label="Agent-Chat"
@@ -73,9 +73,9 @@ export default function Settings() {
                 />
               </div>
 
-              {!runtimeConfigured && (
+              {!backendConfigured && (
                 <p className="mt-2 text-2xs text-surface-500">
-                  Setze <code className="text-gold-400/80">VITE_API_BASE_URL=https://tasks.getvoidra.com</code> um die operative Runtime zu verbinden.
+                  Setze <code className="text-gold-400/80">VITE_API_BASE_URL=https://tasks.getvoidra.com</code> um die Backend-API zu verbinden.
                 </p>
               )}
             </div>

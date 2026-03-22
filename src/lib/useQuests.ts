@@ -1,15 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 import { mockQuests } from '../data/mock';
-import { fetchQuestsFromRuntime } from './missionControlApi';
+import { fetchQuestsFromBackend } from './missionControlApi';
 import type { Quest } from '../types';
 
-// Priority order for data sources:
-// 1. Operative Runtime (VITE_API_BASE_URL -> tasks.getvoidra.com)
-// 2. Supabase (VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY)
-// 3. Mock data (fallback for local dev without backend)
-
-const runtimeConfigured = !!import.meta.env.VITE_API_BASE_URL;
+const backendConfigured = !!import.meta.env.VITE_API_BASE_URL;
 
 const supabaseConfigured = !!(
   import.meta.env.VITE_SUPABASE_URL &&
@@ -18,19 +13,18 @@ const supabaseConfigured = !!(
 
 export function useQuests() {
   const [quests, setQuests] = useState<Quest[]>(
-    runtimeConfigured || supabaseConfigured ? [] : mockQuests
+    backendConfigured || supabaseConfigured ? [] : mockQuests
   );
-  const [loading, setLoading] = useState(runtimeConfigured || supabaseConfigured);
+  const [loading, setLoading] = useState(backendConfigured || supabaseConfigured);
 
   const fetch = useCallback(async () => {
-    // 1. Operative Runtime (tasks.getvoidra.com) - primaere Quelle
-    if (runtimeConfigured) {
+    if (backendConfigured) {
       setLoading(true);
       try {
-        const data = await fetchQuestsFromRuntime();
+        const data = await fetchQuestsFromBackend();
         setQuests(data);
       } catch (err) {
-        console.warn('[useQuests] Runtime fetch failed, falling back to mock:', err);
+        console.warn('[useQuests] Backend API fetch failed, falling back to mock:', err);
         setQuests(mockQuests);
       } finally {
         setLoading(false);

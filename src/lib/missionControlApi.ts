@@ -59,14 +59,13 @@ function mapQuest(raw: any): Quest {
 }
 
 /**
- * Fetch quests from the operative runtime (tasks.getvoidra.com/api/tasks).
- * Returns quests mapped to the frontend Quest shape.
+ * Fetch quests from the backend API.
  */
-export async function fetchQuestsFromRuntime(): Promise<Quest[]> {
+export async function fetchQuestsFromBackend(): Promise<Quest[]> {
   const res = await fetch(`${API_BASE_URL}/api/tasks`, {
     headers: { "Content-Type": "application/json" },
   });
-  if (!res.ok) throw new Error(`Runtime API ${res.status}: ${API_BASE_URL}/api/tasks`);
+  if (!res.ok) throw new Error(`Backend API ${res.status}: ${API_BASE_URL}/api/tasks`);
   const data: unknown = await res.json();
   const d = data as Record<string, unknown>;
   const items = d.items ?? d.quests ?? (Array.isArray(data) ? data : []);
@@ -74,11 +73,11 @@ export async function fetchQuestsFromRuntime(): Promise<Quest[]> {
 }
 
 /**
- * Fetch agents from the operative runtime (tasks.getvoidra.com/api/agents).
+ * Fetch agents from the backend API.
  */
-export async function fetchAgentsFromRuntime(): Promise<unknown[]> {
+export async function fetchAgentsFromBackend(): Promise<unknown[]> {
   const res = await fetch(`${API_BASE_URL}/api/agents`);
-  if (!res.ok) throw new Error(`Runtime API ${res.status}: ${API_BASE_URL}/api/agents`);
+  if (!res.ok) throw new Error(`Backend API ${res.status}: ${API_BASE_URL}/api/agents`);
   const data: unknown = await res.json();
   const d = data as Record<string, unknown>;
   return (d.agents ?? d.items ?? (Array.isArray(data) ? data : [])) as unknown[];
