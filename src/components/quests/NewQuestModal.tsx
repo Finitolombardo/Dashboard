@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { X, Loader } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { createQuestFromIntake } from '../../lib/missionControlApi';
 import type { Priority } from '../../types';
-
-const configured = !!(
-  import.meta.env.VITE_SUPABASE_URL &&
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 
 interface NewQuestModalProps {
   onClose: () => void;
@@ -25,33 +20,18 @@ export default function NewQuestModal({ onClose, onCreated }: NewQuestModalProps
     e.preventDefault();
     if (!title.trim()) return;
 
-    if (!configured) {
-      onClose();
-      return;
-    }
-
     setSubmitting(true);
     setError(null);
 
-    const { error: insertError } = await supabase.from('quests').insert({
-      title: title.trim(),
-      goal: goal.trim(),
-      scope: scope.trim(),
-      priority,
-      agent_id: null,
-      status: 'draft',
-      progress: 0,
-    });
-
-    setSubmitting(false);
-
-    if (insertError) {
+    try {
+      await createQuestFromIntake({ title, goal, scope });
+      onCreated?.();
+      onClose();
+    } catch {
       setError('Fehler beim Erstellen. Bitte erneut versuchen.');
-      return;
+    } finally {
+      setSubmitting(false);
     }
-
-    onCreated?.();
-    onClose();
   };
 
   return (

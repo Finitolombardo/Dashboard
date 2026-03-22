@@ -54,7 +54,7 @@ function mapQuest(raw: any): Quest {
     progress: typeof raw.progress === "number" ? raw.progress : 0,
     linked_workflow_id: null,
     linked_campaign_id: null,
-    notes: raw.notes ?? "",
+    notes: raw.lastResultExcerpt ?? raw.notes ?? "",
     created_at: raw.createdAt ?? new Date().toISOString(),
     updated_at: raw.updatedAt ?? new Date().toISOString(),
     responsible_agent_id: raw.assignedAgentId ?? null,
@@ -196,14 +196,16 @@ export async function sendQuestMessage(questId: string, content: string): Promis
   const res = await fetch(`${API_BASE_URL}/api/tasks/${encodeURIComponent(questId)}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content, senderType: "operator" }),
+    // Backend expects: role ("operator"|"agent"|"system"), messageType ("instruction"|"question"|...), content
+    body: JSON.stringify({ content, role: "operator", messageType: "instruction", actorName: "Operator" }),
   });
   const now = new Date().toISOString();
   if (res.ok) {
     const raw = (await res.json()) as Record<string, unknown>;
-    return mapMessage(raw, questId);
+    // Backend wraps in { ok: true, message: {...} }
+    const msgRaw = (raw.message ?? raw) as Record<string, unknown>;
+    return mapMessage(msgRaw, questId);
   }
-  // If endpoint doesn't exist, return the optimistic message as-is
   return {
     id: `local-${Date.now()}`,
     quest_id: questId,
@@ -213,4 +215,51 @@ export async function sendQuestMessage(questId: string, content: string): Promis
     message_type: "message",
     created_at: now,
   };
+}
+
+// Trigger agent dispatch for a quest (best-effort, no auth required when QUEST_DISPATCH_SECRET not set)
+export async function dispatchQuest(questId: string): Promise<void> {
+  await fetch(`${API_BASE_URL}/api/quests/dispatch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "dispatch", questIds: [questId], force: true, mode: "manual" }),
+  }).catch(() => {});
+}
+
+// Call a quest lifecycle action via POST /api/tasks
+export async function applyQuestAction(questId: string, action: string, reviewNote?: string): Promise<Quest> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const body: Record<string, any> = { questId, action };
+  if (reviewNote) body.reviewNote = reviewNote;
+  const res = await fetch(`${API_BASE_URL}/api/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`POST /api/tasks (${action}): ${res.status}`);
+  const data = (await res.json()) as Record<string, unknown>;
+  const raw = data.quest ?? data;
+  return mapQuest(raw);
+}
+
+// Single-step quest creation from operator text
+export async function createQuestFromIntake(opts: {
+  title: string;
+  goal?: string;
+  scope?: string;
+}): Promise<Quest> {
+  const lines = [
+    opts.title.trim(),
+    opts.goal?.trim() ? `Ziel: ${opts.goal.trim()}` : "",
+    opts.scope?.trim() ? `Umfang: ${opts.scope.trim()}` : "",
+  ].filter(Boolean);
+  const res = await fetch(`${API_BASE_URL}/api/tasks/intake`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ input: lines.join("\n"), intakeSource: "manual", actorName: "Mission Control UI" }),
+  });
+  if (!res.ok) throw new Error(`POST /api/tasks/intake: ${res.status}`);
+  const data = (await res.json()) as Record<string, unknown>;
+  const raw = data.quest ?? data;
+  return mapQuest(raw);
 }

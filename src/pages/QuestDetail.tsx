@@ -13,8 +13,9 @@ import {
   fetchQuestDetailFromBackend,
   fetchQuestMessagesFromBackend,
   fetchQuestArtifactsFromBackend,
-  updateQuestStatus,
   sendQuestMessage,
+  dispatchQuest,
+  applyQuestAction,
   getAgentById,
 } from '../lib/missionControlApi';
 import type { Quest, Message, Event, Artefact } from '../types';
@@ -47,10 +48,41 @@ export default function QuestDetail() {
       .then(q => {
         setQuest(q);
         fetchQuestMessagesFromBackend(id).then(setMessages).catch(() => {});
-        fetchQuestArtifactsFromBackend(id).then(setArtefacts).catch(() => {});
+        fetchQuestArtifactsFromBackend(id)
+          .then(arts => {
+            if (arts.length > 0) {
+              setArtefacts(arts);
+            } else if (q.notes) {
+              // Show last result excerpt as a synthetic artefact
+              setArtefacts([{
+                id: `notes-${q.id}`,
+                quest_id: q.id,
+                title: 'Letzte Ergebnisse',
+                type: 'log' as const,
+                source: 'Agent',
+                created_by: 'Agent',
+                url: '',
+                created_at: q.updated_at,
+              }]);
+            }
+          })
+          .catch(() => {});
       })
       .catch(() => setQuest(null));
   }, [id]);
+
+  // Poll messages while quest is active
+  useEffect(() => {
+    if (!id || !quest) return;
+    const activeStatuses = ['in_progress', 'waiting', 'in_review'];
+    if (!activeStatuses.includes(quest.status)) return;
+    const timer = setInterval(() => {
+      fetchQuestMessagesFromBackend(id).then(setMessages).catch(() => {});
+      fetchQuestDetailFromBackend(id).then(setQuest).catch(() => {});
+    }, 5000);
+    return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, quest?.status]);
 
   if (quest === undefined) {
     return (
@@ -101,13 +133,13 @@ export default function QuestDetail() {
               <>
                 <button
                   className="btn-primary"
-                  onClick={() => updateQuestStatus(quest.id, 'Erledigt').then(() => fetchQuestDetailFromBackend(quest.id).then(setQuest)).catch(() => {})}
+                  onClick={() => applyQuestAction(quest.id, 'review_accept').then(setQuest).catch(() => {})}
                 >
                   <CheckCircle2 size={14} /> Freigeben
                 </button>
                 <button
                   className="btn-secondary"
-                  onClick={() => updateQuestStatus(quest.id, 'In Arbeit').then(() => fetchQuestDetailFromBackend(quest.id).then(setQuest)).catch(() => {})}
+                  onClick={() => applyQuestAction(quest.id, 'restart', 'Änderungen erforderlich. Bitte überarbeiten.').then(setQuest).catch(() => {})}
                 >
                   <RotateCcw size={14} /> Änderungen
                 </button>
@@ -161,6 +193,7 @@ export default function QuestDetail() {
             messages={messages}
             events={events}
             onSend={content => {
+              // Optimistic render
               setMessages(prev => [...prev, {
                 id: `local-${Date.now()}`,
                 quest_id: quest.id,
@@ -170,7 +203,11 @@ export default function QuestDetail() {
                 message_type: 'message' as const,
                 created_at: new Date().toISOString(),
               }]);
-              sendQuestMessage(quest.id, content).catch(() => {});
+              // Send to backend, then dispatch to activate agent
+              sendQuestMessage(quest.id, content)
+                .then(() => dispatchQuest(quest.id))
+                .then(() => fetchQuestDetailFromBackend(quest.id).then(setQuest))
+                .catch(() => {});
             }}
           />
         )}
