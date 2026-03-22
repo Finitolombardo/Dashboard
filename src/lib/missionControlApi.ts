@@ -155,11 +155,14 @@ export async function updateQuestStatus(questId: string, backendStatus: string):
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapMessage(raw: any, questId: string): Message {
+  // Backend returns: role ("operator"|"agent"|"system"), actorName, messageType, createdAt
+  const role = raw.role ?? raw.senderType ?? raw.sender_type ?? "agent";
+  const senderType = role === "operator" ? "operator" : role === "system" ? "system" : "agent";
   return {
     id: raw.id ?? String(Math.random()),
     quest_id: questId,
-    sender_type: (raw.senderType ?? raw.sender_type ?? "agent") as MessageSenderType,
-    sender_name: raw.senderName ?? raw.sender_name ?? raw.actor ?? "Agent",
+    sender_type: senderType as MessageSenderType,
+    sender_name: raw.actorName ?? raw.senderName ?? raw.sender_name ?? raw.actor ?? (senderType === "operator" ? "Operator" : "Agent"),
     content: raw.content ?? raw.text ?? raw.message ?? "",
     message_type: (raw.messageType ?? raw.message_type ?? raw.type ?? "message") as Message["message_type"],
     created_at: raw.createdAt ?? raw.created_at ?? new Date().toISOString(),
@@ -182,7 +185,7 @@ function mapArtefact(raw: any, questId: string): Artefact {
 
 export async function fetchQuestMessagesFromBackend(questId: string): Promise<Message[]> {
   const data = (await apiFetch(`/api/tasks/${questId}/messages`)) as Record<string, unknown>;
-  const items = data.messages ?? (Array.isArray(data) ? data : []);
+  const items = data.items ?? data.messages ?? (Array.isArray(data) ? data : []);
   return (items as object[]).map(raw => mapMessage(raw, questId));
 }
 
@@ -252,21 +255,30 @@ export type OperatorIntent =
 
 export function parseOperatorIntent(content: string): OperatorIntent {
   const trimmed = content.trim();
+  const lower = trimmed.toLowerCase();
 
-  // "Erstelle (eine) Quest (namens) X" / "Neue Quest X" / "Mach eine Quest X"
-  const createMatch = trimmed.match(
-    /^(?:erstell[e]?\s+(?:eine\s+)?quest\s+(?:namens\s+)?|neue\s+quest\s+|mach\s+(?:eine\s+)?quest\s+)["']?(.+?)["']?\s*$/i
-  );
-  if (createMatch) return { type: 'create_quest', title: createMatch[1].trim() };
+  // Create quest: flexible matching — must contain "erstell"/"neue"/"mach" + "quest"
+  // Title extraction: after "namens", "namen", or after last "quest" keyword
+  if (/(?:erstell|neue[srn]?\s+quest|mach.*quest)/i.test(lower) && /quest/i.test(lower)) {
+    // Try extracting title after "namens/namen"
+    const nameMatch = trimmed.match(/(?:namens|namen)\s+["']?(.+?)["']?\s*$/i);
+    if (nameMatch) return { type: 'create_quest', title: nameMatch[1].trim() };
+    // Try extracting title after the last occurrence of "quest"
+    const afterQuest = trimmed.match(/quest\s+["']?([A-Z\u00C0-\u024F].+?)["']?\s*$/i);
+    if (afterQuest) return { type: 'create_quest', title: afterQuest[1].trim() };
+    // Fallback: use everything after "quest" keywords
+    const fallback = trimmed.match(/quest\s+(.+?)\s*$/i);
+    if (fallback) return { type: 'create_quest', title: fallback[1].trim() };
+  }
 
   // "Starte die Quest" / "Quest starten"
-  if (/^(?:starte?\s+(?:die\s+)?quest|quest\s+starten)\s*$/i.test(trimmed)) {
+  if (/(?:starte?\s+(?:die\s+)?quest|quest\s+starten)/i.test(lower)) {
     return { type: 'start_quest' };
   }
 
   // "Delegiere an X" / "Weise X zu"
   const delegateMatch = trimmed.match(
-    /^(?:delegiere?\s+an\s+|weise?\s+(?:an\s+)?|zuweisen\s+an?\s*)["']?(\w+)["']?\s*$/i
+    /(?:delegiere?\s+an|weise\s+(?:an\s+)?|zuweisen\s+an?)\s*["']?(\w+)["']?\s*$/i
   );
   if (delegateMatch) return { type: 'delegate', agent: delegateMatch[1].trim().toLowerCase() };
 
