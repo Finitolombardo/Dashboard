@@ -29,8 +29,10 @@ function mapPriority(p: number | string | undefined): Priority {
 }
 
 function mapAgentStatus(s: string | undefined): AgentStatus {
-  if (s === "Working") return "working";
-  if (s === "Idle") return "idle";
+  const normalized = (s ?? "").toLowerCase();
+  if (["working", "active", "running", "in_progress"].includes(normalized)) return "working";
+  if (["idle", "ready", "unknown"].includes(normalized)) return "idle";
+  if (["blocked", "error", "offline", "unavailable"].includes(normalized)) return "offline";
   return "offline";
 }
 
@@ -66,18 +68,82 @@ function mapQuest(raw: any): Quest {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapAgent(raw: any): Agent {
+  const integrations = Array.isArray(raw.integrations) ? raw.integrations : [];
   return {
     id: raw.key ?? raw.id ?? "",
-    name: raw.name ?? raw.key ?? "",
+    name: raw.runtimeName ?? raw.name ?? raw.key ?? "",
     role: raw.role ?? "",
-    status: mapAgentStatus(raw.status),
-    capabilities: Array.isArray(raw.integrations) ? raw.integrations.join(", ") : "",
-    current_model: raw.model ?? "n/a",
-    workload: 0,
+    status: mapAgentStatus(raw.status ?? raw.infrastructureStatus),
+    capabilities: integrations.join(", "),
+    current_model: raw.model ?? raw.provider ?? "n/a",
+    workload: raw.currentTask ? 1 : 0,
     created_at: raw.lastSeen ?? new Date().toISOString(),
     updated_at: raw.lastSeen ?? new Date().toISOString(),
+    runtime_name: raw.runtimeName ?? raw.name,
+    provider: raw.provider,
+    runtime_status: raw.status,
+    infrastructure_status: raw.infrastructureStatus,
+    last_seen: raw.lastSeen,
+    current_task: raw.currentTask,
+    workspace_path: raw.workspacePath,
+    core_files: raw.coreFiles,
+    core_state: raw.coreState,
+    context_health: raw.contextHealth ?? null,
+    sync_health: raw.syncHealth ?? null,
+    operational_state: raw.operationalState ?? null,
+    runtime_details: raw.runtimeDetails,
+    latest_core_sync_run: raw.latestCoreSyncRun ?? null,
   };
 }
+
+type DashboardAgentRecord = {
+  key?: string;
+  id?: string;
+  name?: string;
+  runtimeName?: string;
+  role?: string;
+  status?: string;
+  infrastructureStatus?: string;
+  provider?: string;
+  model?: string;
+  lastSeen?: string;
+  currentTask?: string;
+  integrations?: string[];
+  workspacePath?: string;
+  coreFiles?: Array<Record<string, unknown>>;
+  coreState?: Array<Record<string, unknown>>;
+  latestCoreSyncRun?: Record<string, unknown> | null;
+  syncHealth?: Record<string, unknown> | null;
+  contextHealth?: Record<string, unknown> | null;
+  operationalState?: Record<string, unknown> | null;
+  runtimeDetails?: Array<Record<string, unknown>>;
+};
+
+type DashboardResponse = {
+  onlineAgents?: DashboardAgentRecord[];
+  agents?: DashboardAgentRecord[];
+};
+
+export type PlaybookRecord = {
+  id: string;
+  title: string;
+  summary?: string;
+  body?: string;
+  canonicalKey?: string;
+  contentType?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isMirror?: boolean;
+  qualityNote?: string;
+  sourceKind?: string;
+  sourceLabel?: string;
+  sourceRef?: string;
+  visibility?: string;
+  sourcePath?: string;
+  sourceId?: string;
+  lastUsedAt?: string;
+  lastChangedAt?: string;
+};
 
 // ─── Fetch helpers ─────────────────────────────────────────────────────────
 
@@ -87,6 +153,47 @@ async function apiFetch(path: string): Promise<unknown> {
   });
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json();
+}
+
+async function fetchDashboardFromBackend(): Promise<DashboardResponse> {
+  return (await apiFetch("/api/dashboard")) as DashboardResponse;
+}
+
+export async function fetchPlaybooksFromBackend(): Promise<PlaybookRecord[]> {
+  const data = (await apiFetch("/api/playbooks")) as Record<string, unknown>;
+  const items = data.items ?? data.playbooks ?? (Array.isArray(data) ? data : []);
+  return (items as PlaybookRecord[]).map(item => ({
+    ...item,
+    sourceId: item.sourceId ?? item.canonicalKey ?? item.id,
+    sourcePath: item.sourcePath ?? item.sourceRef ?? item.sourceLabel,
+    lastUsedAt: item.lastUsedAt,
+    lastChangedAt: item.lastChangedAt ?? item.updatedAt ?? item.createdAt,
+  }));
+}
+
+export async function fetchDashboardAgentsFromBackend(): Promise<Agent[]> {
+  try {
+    const dashboard = await fetchDashboardFromBackend();
+    const source = dashboard.onlineAgents ?? dashboard.agents ?? [];
+    if (Array.isArray(source) && source.length > 0) {
+      return source.map(mapAgent);
+    }
+  } catch (err) {
+    console.warn("[missionControlApi] /api/dashboard unavailable, falling back to quest-derived agents", err);
+  }
+
+  const quests = await fetchQuestsFromBackend();
+  const activeIds = new Set(
+    quests.filter(q => !["done", "archived"].includes(q.status)).map(q => q.agent_id)
+  );
+  const now = new Date().toISOString();
+  return OPERATIVE_AGENTS.map(a => ({
+    ...a,
+    status: activeIds.has(a.id) ? ("working" as const) : ("idle" as const),
+    workload: 0,
+    created_at: now,
+    updated_at: now,
+  }));
 }
 
 // ─── Quests ────────────────────────────────────────────────────────────────

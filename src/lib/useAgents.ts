@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchAgentsFromBackend } from './missionControlApi';
+import { fetchDashboardAgentsFromBackend } from './missionControlApi';
 import type { Agent } from '../types';
 
 export function useAgents() {
@@ -11,7 +11,7 @@ export function useAgents() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchAgentsFromBackend();
+      const data = await fetchDashboardAgentsFromBackend();
       setAgents(data);
     } catch (err) {
       console.warn('[useAgents] Backend fetch failed:', err);

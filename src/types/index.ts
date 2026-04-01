@@ -72,6 +72,20 @@ export interface Agent {
   workload: number;
   created_at: string;
   updated_at: string;
+  runtime_name?: string;
+  provider?: string;
+  runtime_status?: string;
+  infrastructure_status?: string;
+  last_seen?: string;
+  current_task?: string;
+  workspace_path?: string;
+  core_files?: Array<Record<string, unknown>>;
+  core_state?: Array<Record<string, unknown>>;
+  context_health?: Record<string, unknown> | null;
+  sync_health?: Record<string, unknown> | null;
+  operational_state?: Record<string, unknown> | null;
+  runtime_details?: Array<Record<string, unknown>>;
+  latest_core_sync_run?: Record<string, unknown> | null;
 }
 
 export interface Quest {

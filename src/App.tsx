@@ -20,6 +20,7 @@ export default function App() {
           <Route path="/" element={<MissionControl />} />
           <Route path="/quests" element={<Quests />} />
           <Route path="/quests/:id" element={<QuestDetail />} />
+          <Route path="/routines" element={<Agents />} />
           <Route path="/agents" element={<Agents />} />
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/systems" element={<Systems />} />
